@@ -1,0 +1,82 @@
+
+<!DOCTYPE html>
+<html lang="en" class="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light">
+    <title>CV DPJ Berkah Unggas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              primary: '#dc2626', // Red-600
+              secondary: '#64748b', // Slate-500 (Neutral to compliment Red)
+              danger: '#ef4444',
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      body {
+        background-color: #f8fafc; /* bg-slate-50 */
+        color: #0f172a; /* text-slate-900 */
+      }
+      @media print {
+        @page {
+          size: auto;
+          margin: 0mm;
+        }
+        body, html, #root {
+          height: auto !important;
+          overflow: visible !important;
+          background-color: white !important;
+          color: black !important;
+        }
+        /* Ensure navigation and other UI elements are hidden */
+        nav, header, button, .no-print {
+          display: none !important;
+        }
+        /* Ensure content takes full width */
+        main {
+          margin: 0 !important;
+          padding: 0 !important;
+          width: 100% !important;
+        }
+        /* Fix table cutting off */
+        table {
+          page-break-inside: auto;
+        }
+        tr {
+          page-break-inside: avoid;
+          page-break-after: auto;
+        }
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "uuid": "https://aistudiocdn.com/uuid@^13.0.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
+    "@supabase/supabase-js": "https://aistudiocdn.com/@supabase/supabase-js@^2.45.0",
+    "html2canvas": "https://aistudiocdn.com/html2canvas@^1.4.1",
+    "jspdf": "https://aistudiocdn.com/jspdf@^2.5.1"
+  }
+}
+</script>
+</head>
+  <body class="bg-slate-50 text-slate-900">
+    <div id="root"></div>
+  </body>
+</html>
