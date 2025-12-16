@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { ActivityLog } from '../types';
 import { getActivityLogs } from '../services/logService';
-import { History, Search, RefreshCw, Database } from 'lucide-react';
+import { History, Search, RefreshCw, Database, ChevronLeft, ChevronRight } from 'lucide-react';
 import SchemaModal from './SchemaModal';
 
 const ActivityLogTable: React.FC = () => {
@@ -10,6 +11,10 @@ const ActivityLogTable: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAction, setFilterAction] = useState<string>('ALL');
   const [showSchema, setShowSchema] = useState(false);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -22,6 +27,11 @@ const ActivityLogTable: React.FC = () => {
     fetchLogs();
   }, []);
 
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterAction]);
+
   const filteredLogs = logs.filter(log => {
     const term = searchTerm.toLowerCase();
     const matchesSearch = 
@@ -33,6 +43,13 @@ const ActivityLogTable: React.FC = () => {
     
     return matchesSearch && matchesFilter;
   });
+
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+  const paginatedLogs = filteredLogs.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const getActionColor = (type: string) => {
       switch(type) {
@@ -52,7 +69,7 @@ const ActivityLogTable: React.FC = () => {
                 <History className="w-6 h-6 text-slate-600" />
                 Activity Log
             </h2>
-            <p className="text-sm text-slate-500">Rekaman aktivitas pengguna sistem.</p>
+            <p className="text-sm text-slate-500">Rekaman aktivitas pengguna sistem (Database Limit: 500 Terakhir).</p>
         </div>
         <div className="flex gap-2">
             <button 
@@ -114,14 +131,14 @@ const ActivityLogTable: React.FC = () => {
                       </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                      {filteredLogs.length === 0 ? (
+                      {paginatedLogs.length === 0 ? (
                           <tr>
                             <td colSpan={5} className="p-10 text-center text-slate-400 italic">
                                 {loading ? 'Memuat data...' : 'Tidak ada log aktivitas atau tabel belum dibuat.'}
                             </td>
                           </tr>
                       ) : (
-                          filteredLogs.map(log => (
+                          paginatedLogs.map(log => (
                               <tr key={log.id} className="hover:bg-slate-50">
                                   <td className="p-3 text-slate-500 whitespace-nowrap text-xs">
                                       {new Date(log.timestamp).toLocaleString('id-ID')}
@@ -147,6 +164,31 @@ const ActivityLogTable: React.FC = () => {
                   </tbody>
               </table>
           </div>
+          
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-between items-center p-4 border-t border-slate-200 bg-slate-50">
+                <div className="text-xs text-slate-500">
+                    Halaman {currentPage} dari {totalPages} ({filteredLogs.length} Total Logs)
+                </div>
+                <div className="flex gap-2">
+                    <button 
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="p-2 bg-white border border-slate-300 rounded hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button 
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="p-2 bg-white border border-slate-300 rounded hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <ChevronRight className="w-4 h-4" />
+                    </button>
+                </div>
+            </div>
+          )}
       </div>
 
       {showSchema && <SchemaModal onClose={() => setShowSchema(false)} />}

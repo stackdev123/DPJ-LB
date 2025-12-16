@@ -1,78 +1,110 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { SaleRecord, PurchaseRecord, LedgerRow, User } from '../types';
-import { Edit, Printer, Search, X, Calendar, Truck, FileWarning, Trash2, PlusCircle, Home, AlertTriangle, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { PurchaseRecord, SaleRecord, LedgerRow, User } from '../types';
 import { formatDate, formatCurrency } from '../utils';
-import { getSalesPaginated } from '../services/storageService';
+import { Loader2, Printer, Edit, FileWarning, Trash2, Search, Plus, Filter, ChevronLeft, ChevronRight, X, Calendar } from 'lucide-react';
+import * as Storage from '../services/storageService';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 interface SalesListProps {
-  purchases: PurchaseRecord[]; // Kept for Client-Side lookup (Reference Data)
-  onEditSale: (saleId: string) => void;
+  purchases: PurchaseRecord[];
+  sales?: SaleRecord[];
+  onEditSale: (id: string) => void;
   onPrintInvoice: (data: LedgerRow) => void;
   onComplaint: (sale: SaleRecord) => void;
-  onDeleteSale: (saleId: string) => Promise<void>;
+  onDeleteSale: (id: string) => Promise<void>;
   user: User;
-  onNewSale?: () => void;
+  onNewSale: () => void;
 }
 
-const SalesList: React.FC<SalesListProps> = ({ purchases, onEditSale, onPrintInvoice, onComplaint, onDeleteSale, user, onNewSale }) => {
-  // Pagination State
-  const [sales, setSales] = useState<SaleRecord[]>([]);
+const SalesList: React.FC<SalesListProps> = ({ purchases, sales, onEditSale, onPrintInvoice, onComplaint, onDeleteSale, user, onNewSale }) => {
+  const [internalSales, setInternalSales] = useState<SaleRecord[]>([]);
   const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
-  const [pageSize] = useState(20);
-  const [totalCount, setTotalCount] = useState(0);
+  
+  // Filter State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Filters
-  const [filterDate, setFilterDate] = useState('');
-  const [filterCustomer, setFilterCustomer] = useState('');
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
 
-  // Delete State
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  // Fetch Data
   useEffect(() => {
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, filterDate, filterCustomer]); // Debounce logic ideally needed for text search, but keep simple for now
+    if (sales) {
+        setInternalSales(sales);
+    } else {
+        const load = async () => {
+            setLoading(true);
+            const data = await Storage.getSales();
+            setInternalSales(data);
+            setLoading(false);
+        };
+        load();
+    }
+  }, [sales]);
 
-  const fetchData = async () => {
-    setLoading(true);
-    const { data, count } = await getSalesPaginated(page, pageSize, {
-        date: filterDate || undefined,
-        customerName: filterCustomer || undefined
-    });
-    setSales(data);
-    setTotalCount(count);
-    setLoading(false);
-  };
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, startDate, endDate]);
 
-  // Combine Sale data with parent Purchase data for display
+  const isSuperAdmin = user.role === 'SUPER_ADMIN';
+
   const richSalesData = useMemo(() => {
-    return sales.map(sale => {
-      const parent = purchases.find(p => p.id === sale.purchaseId);
-      const netKg = Math.max(0, sale.soldKg - sale.mortalityKg);
-      const total = netKg * sale.sellPrice;
-      
-      const totalExtras = (sale.unloadingCost || 0) + (sale.driverBonus || 0) + (sale.operationalCost || 0) + (sale.truckCost || 0);
-      const mortalityPct = sale.soldKg > 0 ? (sale.mortalityKg / sale.soldKg) * 100 : 0;
+      // 1. Map Data
+      const mapped = internalSales.map(s => {
+          const purchase = purchases.find(p => p.id === s.purchaseId);
+          const totalExtras = (s.unloadingCost || 0) + (s.driverBonus || 0) + (s.operationalCost || 0) + (s.truckCost || 0);
+          const netKg = Math.max(0, s.soldKg - s.mortalityKg);
+          const totalInvoice = netKg * s.sellPrice;
 
-      return {
-        ...sale,
-        totalInvoice: total,
-        totalExtras,
-        mortalityPct,
-        plate: parent?.plate || 'Unknown',
-        driver: parent?.driver || 'Unknown',
-        coop: parent?.coop || 'Tanpa Kandang',
-        purchaseDate: parent?.date || null
-      };
-    });
-  }, [sales, purchases]);
+          return {
+              ...s,
+              plate: purchase?.plate || 'Unknown',
+              driver: purchase?.driver || 'Unknown',
+              coop: purchase?.coop || 'Unknown',
+              totalExtras,
+              totalInvoice,
+              // For ledger row mapping
+              customer: s.customerName,
+              totalSales: totalInvoice,
+              totalPaid: 0, 
+              remainingBalance: totalInvoice 
+          };
+      });
 
-  const handlePrintClick = (item: typeof richSalesData[0]) => {
+      // 2. Filter Data
+      return mapped.filter(s => {
+         const searchMatch = 
+            s.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            s.plate.toLowerCase().includes(searchTerm.toLowerCase());
+         
+         let dateMatch = true;
+         if (startDate || endDate) {
+             const sDate = new Date(s.date);
+             const start = startDate ? new Date(startDate) : null;
+             const end = endDate ? new Date(endDate) : null;
+             
+             if (start && sDate < start) dateMatch = false;
+             if (end && sDate > end) dateMatch = false;
+         }
+
+         return searchMatch && dateMatch;
+      }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [internalSales, purchases, searchTerm, startDate, endDate]);
+
+  // Pagination Logic
+  const totalPages = Math.ceil(richSalesData.length / itemsPerPage);
+  const paginatedData = richSalesData.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handlePrintClick = (item: any) => {
       const row: LedgerRow = {
           date: item.date,
           plate: item.plate,
@@ -86,11 +118,11 @@ const SalesList: React.FC<SalesListProps> = ({ purchases, onEditSale, onPrintInv
           mortalityValue: item.mortalityKg * item.sellPrice,
           unloadingCost: item.unloadingCost,
           driverBonus: item.driverBonus,
-          operationalCost: item.operationalCost || 0,
-          truckCost: item.truckCost || 0,
+          operationalCost: item.operationalCost,
+          truckCost: item.truckCost,
           totalSales: item.totalInvoice,
-          totalPaid: 0, 
-          remainingBalance: item.totalInvoice, 
+          totalPaid: 0,
+          remainingBalance: item.totalInvoice,
           saleId: item.id,
           purchaseId: item.purchaseId
       };
@@ -98,291 +130,201 @@ const SalesList: React.FC<SalesListProps> = ({ purchases, onEditSale, onPrintInv
   };
 
   const initiateDelete = (id: string) => {
-      setItemToDelete(id);
-      setDeleteModalOpen(true);
-  };
-
-  const confirmDelete = async () => {
-      if (itemToDelete) {
-          await onDeleteSale(itemToDelete);
-          setItemToDelete(null);
-          fetchData(); // Refresh list after delete
-      }
-  };
+      setDeleteId(id);
+  }
 
   const clearFilters = () => {
-    setFilterDate('');
-    setFilterCustomer('');
-    setPage(1);
-  };
-
-  const isSuperAdmin = user.role === 'SUPER_ADMIN';
-  const totalPages = Math.ceil(totalCount / pageSize);
+      setSearchTerm('');
+      setStartDate('');
+      setEndDate('');
+  }
 
   return (
-    <div className="bg-white p-4 md:p-6 rounded-xl shadow-md border border-slate-200">
-      {/* Buttons */}
-      <div className="flex justify-end items-center mb-6 gap-2">
-        {onNewSale && (
-            <button 
-                onClick={onNewSale}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold shadow-md transition-all text-sm"
-            >
-                <PlusCircle className="w-4 h-4" /> Input Penjualan Baru
+    <div className="space-y-4">
+        {/* Header & Actions */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="flex items-center gap-2 w-full md:w-auto">
+                <div className="relative flex-1 md:w-64">
+                    <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                    <input
+                        type="text"
+                        placeholder="Cari Customer / Plat..."
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                </div>
+                <button 
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={`p-2 border rounded-lg transition-colors ${showFilters ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-slate-300 text-slate-600'}`}
+                    title="Advanced Filter"
+                >
+                    <Filter className="w-4 h-4" />
+                </button>
+            </div>
+            
+            <button onClick={onNewSale} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm whitespace-nowrap">
+                <Plus className="w-4 h-4" /> Input Penjualan
             </button>
-        )}
-      </div>
+        </div>
 
-      {/* Filter Section */}
-      <div className="mb-6 bg-slate-50 p-4 rounded-lg border border-slate-200">
-         <div className="flex justify-between items-center mb-2">
-              <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2"><Search className="w-4 h-4" /> Filter Pencarian</h3>
-              {(filterDate || filterCustomer) && (
-                <button onClick={clearFilters} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1">
-                    <X className="w-3 h-3" /> Clear Filters
-                </button>
-              )}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Tanggal Transaksi</label>
-                  <div className="relative">
-                    <Calendar className="absolute left-2 top-2.5 w-4 h-4 text-slate-400" />
-                    <input 
+        {/* Advanced Filters Panel */}
+        {showFilters && (
+           <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 animate-in slide-in-from-top-2">
+               <div className="flex justify-between items-center mb-3">
+                   <h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                       <Calendar className="w-3 h-3" /> Filter Tanggal
+                   </h3>
+                   {(startDate || endDate) && (
+                       <button onClick={clearFilters} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 font-bold">
+                           <X className="w-3 h-3" /> Reset Filter
+                       </button>
+                   )}
+               </div>
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                   <div>
+                       <label className="block text-xs text-slate-500 mb-1 font-semibold">Dari Tanggal</label>
+                       <input 
                         type="date" 
-                        value={filterDate}
-                        onChange={e => { setFilterDate(e.target.value); setPage(1); }}
-                        className="w-full pl-8 text-sm border-slate-300 rounded-md p-2"
-                    />
-                  </div>
-              </div>
-              <div className="md:col-span-2">
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Cari Nama Customer</label>
-                   <div className="relative">
-                    <Search className="absolute left-2 top-2.5 w-4 h-4 text-slate-400" />
-                    <input 
-                        type="text" 
-                        placeholder="Ketik nama customer..."
-                        value={filterCustomer}
-                        onChange={e => { setFilterCustomer(e.target.value); setPage(1); }}
-                        className="w-full pl-8 text-sm border-slate-300 rounded-md p-2"
-                    />
-                  </div>
-              </div>
-          </div>
-      </div>
+                        value={startDate} 
+                        onChange={e => setStartDate(e.target.value)} 
+                        className="w-full text-sm border-slate-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                       />
+                   </div>
+                   <div>
+                       <label className="block text-xs text-slate-500 mb-1 font-semibold">Sampai Tanggal</label>
+                       <input 
+                        type="date" 
+                        value={endDate} 
+                        onChange={e => setEndDate(e.target.value)} 
+                        className="w-full text-sm border-slate-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                       />
+                   </div>
+                   <div className="flex items-end">
+                       <div className="text-xs text-slate-500 bg-white p-2 rounded border w-full text-center h-[38px] flex items-center justify-center">
+                           Menampilkan <b>{richSalesData.length}</b> data
+                       </div>
+                   </div>
+               </div>
+           </div>
+       )}
 
-      {/* Desktop Table View (Scrollable & Sticky Header) */}
-      <div className="hidden md:block overflow-auto max-h-[70vh] rounded-lg border border-slate-200 relative custom-scrollbar">
-        <table className="w-full text-sm text-left">
-            <thead className="bg-slate-100 text-slate-700 font-bold uppercase text-xs sticky top-0 z-10 shadow-sm">
-                <tr>
-                    <th className="p-3 bg-slate-100 border-b border-slate-200">Tanggal Jual</th>
-                    <th className="p-3 bg-slate-100 border-b border-slate-200">Customer</th>
-                    <th className="p-3 bg-slate-100 border-b border-slate-200">Asal (Kandang & DO)</th>
-                    <th className="p-3 bg-slate-100 border-b border-slate-200">Transport</th>
-                    <th className="p-3 text-right bg-slate-100 border-b border-slate-200">Vol (Net)</th>
-                    <th className="p-3 text-center bg-slate-100 border-b border-slate-200">Mati / Loss</th>
-                    <th className="p-3 text-right bg-slate-100 border-b border-slate-200">Biaya Ops</th>
-                    <th className="p-3 text-right bg-slate-100 border-b border-slate-200">Total Invoice</th>
-                    <th className="p-3 text-center bg-slate-100 border-b border-slate-200">Aksi</th>
-                </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-                {loading ? (
-                     <tr>
-                        <td colSpan={9} className="p-10 text-center text-slate-400">
-                            <div className="flex justify-center items-center gap-2">
-                                <Loader2 className="w-5 h-5 animate-spin text-primary" /> Memuat Data Penjualan...
-                            </div>
-                        </td>
-                    </tr>
-                ) : richSalesData.length === 0 ? (
-                    <tr>
-                        <td colSpan={9} className="p-8 text-center text-slate-400 italic">
-                            Tidak ada data penjualan yang cocok.
-                        </td>
-                    </tr>
-                ) : (
-                    richSalesData.map(item => (
-                        <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="p-3 font-medium text-slate-700 whitespace-nowrap align-top">{formatDate(item.date)}</td>
-                            <td className="p-3 font-bold text-blue-800 align-top">{item.customerName}</td>
-                            
-                            <td className="p-3 align-top">
-                                <div className="font-bold text-slate-700 text-xs">{item.coop}</div>
-                                <div className="text-[10px] text-slate-500 flex items-center gap-1">
-                                    <Calendar className="w-3 h-3" />
-                                    Beli: {item.purchaseDate ? formatDate(item.purchaseDate) : '-'}
-                                </div>
-                            </td>
-
-                            <td className="p-3 text-slate-600 align-top">
-                                <div className="flex items-center gap-1">
-                                    <Truck className="w-3 h-3 text-slate-400" />
-                                    {item.plate}
-                                </div>
-                                <div className="text-xs text-slate-400 pl-4">{item.driver}</div>
-                            </td>
-                            <td className="p-3 text-right font-mono align-top">
-                                <div className="font-bold">{(item.soldKg - item.mortalityKg).toLocaleString()} Kg</div>
-                                <div className="text-xs text-slate-500">{item.soldHeads} Ekor</div>
-                            </td>
-                             <td className="p-3 text-center align-top">
-                                {item.mortalityKg > 0 ? (
-                                    <div className="inline-flex flex-col items-center bg-red-50 border border-red-100 px-2 py-1 rounded">
-                                        <div className="flex items-center gap-1 text-red-600 font-bold text-xs">
-                                            <AlertTriangle className="w-3 h-3" /> {item.mortalityKg} Kg
-                                        </div>
-                                        <div className="text-[10px] text-red-400">
-                                            {item.mortalityHeads} Ekor ({item.mortalityPct.toFixed(1)}%)
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <span className="text-slate-300">-</span>
-                                )}
-                            </td>
-                            <td className="p-3 text-right align-top">
-                                {item.totalExtras > 0 ? (
-                                    <div className="flex flex-col items-end gap-1">
-                                        <div className="font-bold text-orange-600 text-xs">{formatCurrency(item.totalExtras)}</div>
-                                        <div className="flex gap-1 flex-wrap justify-end">
-                                            {item.unloadingCost > 0 && <span className="text-[9px] bg-orange-100 text-orange-700 px-1 rounded">Bongkar</span>}
-                                            {item.driverBonus > 0 && <span className="text-[9px] bg-blue-100 text-blue-700 px-1 rounded">Sopir</span>}
-                                            {item.truckCost > 0 && <span className="text-[9px] bg-slate-100 text-slate-700 px-1 rounded">Truk</span>}
-                                            {item.operationalCost > 0 && <span className="text-[9px] bg-purple-100 text-purple-700 px-1 rounded">Lainnya</span>}
-                                        </div>
-                                    </div>
-                                ) : <span className="text-slate-300">-</span>}
-                            </td>
-                            <td className="p-3 text-right font-bold text-slate-800 align-top">
-                                {formatCurrency(item.totalInvoice)}
-                            </td>
-                            <td className="p-3 text-center flex justify-center gap-2 align-top">
-                                <button 
-                                    onClick={() => handlePrintClick(item)}
-                                    className="p-1.5 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded border border-slate-200"
-                                    title="Cetak Invoice"
-                                >
-                                    <Printer className="w-4 h-4" />
-                                </button>
-                                <button 
-                                    onClick={() => onEditSale(item.id)}
-                                    className="p-1.5 text-slate-600 hover:text-orange-600 hover:bg-orange-50 rounded border border-slate-200"
-                                    title="Edit Transaksi"
-                                >
-                                    <Edit className="w-4 h-4" />
-                                </button>
-                                <button 
-                                    onClick={() => onComplaint(item)}
-                                    className="p-1.5 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded border border-slate-200"
-                                    title="Surat Komplain Kematian"
-                                >
-                                    <FileWarning className="w-4 h-4" />
-                                </button>
-                                {isSuperAdmin && (
-                                    <button 
-                                        onClick={() => initiateDelete(item.id)}
-                                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded border border-slate-200 transition-colors"
-                                        title="Hapus Transaksi (Super Admin)"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                )}
-                            </td>
+        <div className="bg-white shadow-sm rounded-lg overflow-hidden flex flex-col h-[calc(100vh-200px)]">
+            {/* Unified Table View for Mobile & Desktop */}
+            <div className="overflow-auto flex-1 rounded border border-slate-200 relative custom-scrollbar">
+                <table className="w-full text-xs text-left whitespace-nowrap">
+                    <thead className="bg-blue-600 text-white font-bold uppercase text-[10px] sticky top-0 z-10 shadow-md">
+                        <tr>
+                            <th className="p-3 border-r border-blue-500 w-24">Tanggal</th>
+                            <th className="p-3 border-r border-blue-500">Customer</th>
+                            <th className="p-3 border-r border-blue-500">Sumber / Transport</th>
+                            <th className="p-3 text-right border-r border-blue-500">Net Vol</th>
+                            <th className="p-3 text-center border-r border-blue-500">Mati</th>
+                            <th className="p-3 text-right border-r border-blue-500">Ops</th>
+                            <th className="p-3 text-right border-r border-blue-500 bg-blue-800">Total Invoice</th>
+                            <th className="p-3 text-center w-20">Aksi</th>
                         </tr>
-                    ))
-                )}
-            </tbody>
-        </table>
-      </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                        {loading ? (
+                            <tr>
+                                <td colSpan={8} className="p-10 text-center text-slate-400">
+                                    <div className="flex justify-center items-center gap-2">
+                                        <Loader2 className="w-4 h-4 animate-spin text-primary" /> Loading...
+                                    </div>
+                                </td>
+                            </tr>
+                        ) : paginatedData.length === 0 ? (
+                            <tr>
+                                <td colSpan={8} className="p-8 text-center text-slate-400 italic">
+                                    Tidak ada data penjualan.
+                                </td>
+                            </tr>
+                        ) : (
+                            paginatedData.map(item => (
+                                <tr key={item.id} className="hover:bg-blue-50 transition-colors group">
+                                    <td className="p-2 font-medium text-slate-700 border-r border-slate-100 align-top">{formatDate(item.date)}</td>
+                                    <td className="p-2 font-bold text-blue-800 border-r border-slate-100 align-top truncate max-w-[180px]" title={item.customerName}>{item.customerName}</td>
+                                    
+                                    <td className="p-2 border-r border-slate-100 align-top">
+                                        <div className="text-xs font-semibold text-slate-700">{item.plate}</div>
+                                        <div className="text-[10px] text-slate-500 truncate max-w-[150px]">
+                                            {item.coop} | {item.driver}
+                                        </div>
+                                    </td>
 
-      {/* Mobile Card View */}
-      <div className="md:hidden space-y-4">
-          {loading ? (
-             <div className="p-8 text-center text-slate-400 italic bg-slate-50 rounded border border-dashed border-slate-300">
-                <div className="flex justify-center items-center gap-2">
-                    <Loader2 className="w-5 h-5 animate-spin text-primary" /> Loading...
-                </div>
+                                    <td className="p-2 text-right border-r border-slate-100 align-top">
+                                        <div className="font-mono font-bold text-slate-800">{(item.soldKg - item.mortalityKg).toLocaleString()} Kg</div>
+                                        <div className="text-[10px] text-slate-500">{item.soldHeads} Ekor</div>
+                                    </td>
+                                    
+                                    <td className="p-2 text-center border-r border-slate-100 align-top">
+                                        {item.mortalityKg > 0 ? (
+                                            <div className="text-xs text-red-600 font-bold">
+                                                {item.mortalityKg} <span className="text-[9px] font-normal text-red-400">Kg</span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-slate-300">-</span>
+                                        )}
+                                    </td>
+                                    
+                                    <td className="p-2 text-right border-r border-slate-100 align-top text-xs text-orange-700 font-mono">
+                                        {item.totalExtras > 0 ? formatCurrency(item.totalExtras) : '-'}
+                                    </td>
+                                    
+                                    <td className="p-2 text-right font-bold text-slate-900 bg-slate-50 border-l border-slate-200 font-mono align-top text-xs">
+                                        {formatCurrency(item.totalInvoice)}
+                                    </td>
+                                    
+                                    <td className="p-2 text-center align-top">
+                                        <div className="flex justify-center gap-1">
+                                            <button onClick={() => handlePrintClick(item)} className="p-1 hover:text-blue-600 bg-slate-50 hover:bg-blue-50 border rounded" title="Print"><Printer className="w-3 h-3" /></button>
+                                            <button onClick={() => onEditSale(item.id)} className="p-1 hover:text-orange-600 bg-slate-50 hover:bg-orange-50 border rounded" title="Edit"><Edit className="w-3 h-3" /></button>
+                                            <button onClick={() => onComplaint(item)} className="p-1 hover:text-red-600 bg-slate-50 hover:bg-red-50 border rounded" title="Komplain"><FileWarning className="w-3 h-3" /></button>
+                                            {isSuperAdmin && (
+                                                <button onClick={() => initiateDelete(item.id)} className="p-1 text-red-300 hover:text-red-600 bg-slate-50 hover:bg-red-50 border rounded"><Trash2 className="w-3 h-3" /></button>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
             </div>
-          ) : richSalesData.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 italic bg-slate-50 rounded border border-dashed border-slate-300">
-                    Tidak ada data penjualan.
+            
+            {/* Pagination Controls - Compact */}
+            <div className="bg-white border-t border-slate-200 px-3 py-1.5 flex items-center justify-between">
+                <div className="text-xs text-slate-500">
+                    Hal {currentPage} dari {totalPages || 1} (Total {richSalesData.length})
                 </div>
-          ) : (
-              richSalesData.map(item => (
-                  <div key={item.id} className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 relative">
-                      {/* ... existing mobile card render logic ... */}
-                       <div className="flex justify-between items-start mb-3 border-b border-slate-100 pb-2">
-                          <div>
-                              <div className="text-xs text-slate-500 font-bold uppercase">{formatDate(item.date)}</div>
-                              <div className="text-lg font-bold text-blue-800 leading-tight">{item.customerName}</div>
-                          </div>
-                          <div className="flex gap-2">
-                                <button onClick={() => handlePrintClick(item)} className="p-2 text-blue-600 bg-blue-50 rounded-full"><Printer className="w-4 h-4" /></button>
-                                <button onClick={() => onEditSale(item.id)} className="p-2 text-orange-600 bg-orange-50 rounded-full"><Edit className="w-4 h-4" /></button>
-                          </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-sm">
-                          <div className="col-span-2 flex items-center justify-between text-slate-600 text-xs bg-orange-50 border border-orange-100 p-2 rounded">
-                                <div className="flex items-center gap-2"><Home className="w-3 h-3 text-orange-600" /><span className="font-bold">{item.coop}</span></div>
-                                <div className="text-[10px]">DO: {item.purchaseDate ? formatDate(item.purchaseDate) : '-'}</div>
-                          </div>
-                          <div className="col-span-2 flex items-center gap-2 text-slate-600 text-xs bg-slate-50 p-2 rounded">
-                              <Truck className="w-3 h-3" /> {item.plate}
-                          </div>
-                          <div className="bg-slate-50 p-2 rounded border border-slate-100">
-                              <div className="text-xs text-slate-400">Net Kg</div>
-                              <div className="font-mono font-semibold">{(item.soldKg - item.mortalityKg).toLocaleString()}</div>
-                          </div>
-                           <div className={`p-2 rounded border border-slate-100 ${item.mortalityKg > 0 ? 'bg-red-50 border-red-200' : 'bg-slate-50'}`}>
-                              <div className="text-xs text-slate-400">Mati</div>
-                              {item.mortalityKg > 0 ? (<div className="font-mono text-red-600 font-bold">{item.mortalityKg} Kg</div>) : <span className="text-slate-300">-</span>}
-                          </div>
-                          <div className="col-span-2 pt-2 border-t border-slate-100 flex justify-between items-center mt-1">
-                              <span className="text-xs font-bold text-slate-500 uppercase">Invoice</span>
-                              <span className="text-lg font-bold text-slate-900">{formatCurrency(item.totalInvoice)}</span>
-                          </div>
-                      </div>
-                  </div>
-              ))
-          )}
-      </div>
-
-       {/* Pagination Controls */}
-       <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-100 print:hidden">
-            <div className="text-xs text-slate-500">
-                Menampilkan {sales.length} dari total {totalCount} data.
-            </div>
-            <div className="flex items-center gap-2">
-                <button 
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                    disabled={page === 1 || loading}
-                    className="p-2 border rounded hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    <ChevronLeft className="w-4 h-4" />
-                </button>
-                <span className="text-xs font-bold text-slate-700">
-                    Hal {page} / {totalPages || 1}
-                </span>
-                <button 
-                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages || loading || totalPages === 0}
-                    className="p-2 border rounded hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    <ChevronRight className="w-4 h-4" />
-                </button>
+                <div className="flex gap-1">
+                    <button 
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="p-1 border rounded hover:bg-slate-50 disabled:opacity-50"
+                    >
+                        <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button 
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages || totalPages === 0}
+                        className="p-1 border rounded hover:bg-slate-50 disabled:opacity-50"
+                    >
+                        <ChevronRight className="w-4 h-4" />
+                    </button>
+                </div>
             </div>
         </div>
 
-      <DeleteConfirmationModal 
-        isOpen={deleteModalOpen}
-        onClose={() => setDeleteModalOpen(false)}
-        onConfirm={confirmDelete}
-        title="Hapus Penjualan"
-        message="Anda yakin ingin menghapus data penjualan ini? Tindakan ini tidak dapat dibatalkan."
-        username={user.username}
-      />
+        <DeleteConfirmationModal
+          isOpen={!!deleteId}
+          onClose={() => setDeleteId(null)}
+          onConfirm={async () => { if(deleteId) await onDeleteSale(deleteId); }}
+          title="Hapus Data Penjualan"
+          message="Menghapus penjualan akan mempengaruhi stok, ledger, dan laporan keuangan."
+          username={user.username}
+       />
     </div>
   );
 };

@@ -144,7 +144,10 @@ export const getPurchases = async (): Promise<PurchaseRecord[]> => {
         .select('id, date, supplier, coop, driver, plate, heads, kg, avg_weight, buy_price, total_buy_cost, is_distributed')
         .order('date', { ascending: false });
     
-    if (error) { console.error('Error fetching purchases:', error); return []; }
+    if (error) { 
+        console.error('Error fetching purchases:', error.message || JSON.stringify(error)); 
+        return []; 
+    }
     return data.map(mapPurchaseFromDB);
 };
 
@@ -174,7 +177,7 @@ export const getPurchasesPaginated = async (
         .range(from, to);
 
     if (error) { 
-        console.error('Error fetching purchases:', error); 
+        console.error('Error fetching purchases (paginated):', error.message || JSON.stringify(error)); 
         return { data: [], count: 0 }; 
     }
     
@@ -209,7 +212,10 @@ export const getSales = async (): Promise<SaleRecord[]> => {
         .select('id, purchase_id, customer_id, customer_name, customer_address, date, sold_heads, sold_kg, sell_price, mortality_heads, mortality_kg, unloading_cost, driver_bonus, operational_cost, truck_cost, payments')
         .order('date', { ascending: false });
 
-    if (error) { console.error('Error fetching sales:', error); return []; }
+    if (error) { 
+        console.error('Error fetching sales:', error.message || JSON.stringify(error)); 
+        return []; 
+    }
     return data.map(mapSaleFromDB);
 };
 
@@ -237,7 +243,7 @@ export const getSalesPaginated = async (
         .range(from, to);
 
     if (error) { 
-        console.error('Error fetching sales:', error); 
+        console.error('Error fetching sales (paginated):', error.message || JSON.stringify(error)); 
         return { data: [], count: 0 }; 
     }
     
@@ -270,7 +276,10 @@ export const getCustomerPayments = async (): Promise<CustomerPayment[]> => {
         .select('id, date, customer_id, customer_name, transfer_amount, cash_amount, unloading_cost, driver_bonus, other_cost, notes, total_paid')
         .order('date', { ascending: false });
     
-    if (error) { console.error('Error fetching payments:', error); return []; }
+    if (error) { 
+        console.error('Error fetching payments:', error.message || JSON.stringify(error)); 
+        return []; 
+    }
     return data.map(mapCustomerPaymentFromDB);
 };
 
@@ -297,7 +306,10 @@ export const getSupplierPayments = async (): Promise<SupplierPayment[]> => {
         .select('id, date, supplier_name, amount, method, notes')
         .order('date', { ascending: false });
     
-    if (error) { console.error('Error fetching supplier payments:', error); return []; }
+    if (error) { 
+        console.error('Error fetching supplier payments:', error.message || JSON.stringify(error)); 
+        return []; 
+    }
     return data.map(mapSupplierPaymentFromDB);
 };
 
@@ -310,7 +322,7 @@ export const saveSupplierPayment = async (payment: SupplierPayment) => {
 export const deleteSupplierPayment = async (id: string) => {
     const { error } = await supabase.from('avt_supplier_payments').delete().eq('id', id);
     if (error) throw error;
-}
+};
 
 // --- DRIVER TRANSACTIONS ---
 
@@ -320,7 +332,10 @@ export const getDriverTransactions = async (): Promise<DriverTransaction[]> => {
         .select('id, driver_name, date, amount, type, notes')
         .order('date', { ascending: false });
 
-    if (error) { console.error('Error fetching driver tx:', error); return []; }
+    if (error) { 
+        console.error('Error fetching driver tx:', error.message || JSON.stringify(error)); 
+        return []; 
+    }
     return data.map(mapDriverTxFromDB);
 };
 
@@ -336,7 +351,10 @@ export const saveDriverTransaction = async (tx: DriverTransaction) => {
 // Customers
 export const getCustomers = async (): Promise<Customer[]> => {
     const { data, error } = await supabase.from('avt_customers').select('id, name, address, phone').order('name');
-    if (error) { console.error('Error fetching customers:', error); return []; }
+    if (error) { 
+        console.error('Error fetching customers:', error.message || JSON.stringify(error)); 
+        return []; 
+    }
     return data as Customer[];
 };
 
@@ -353,7 +371,10 @@ export const deleteCustomer = async (id: string) => {
 // Suppliers
 export const getSuppliers = async (): Promise<Supplier[]> => {
     const { data, error } = await supabase.from('avt_suppliers').select('id, name').order('name');
-    if (error) { console.error('Error fetching suppliers:', error); return []; }
+    if (error) { 
+        console.error('Error fetching suppliers:', error.message || JSON.stringify(error)); 
+        return []; 
+    }
     return data as Supplier[];
 };
 
@@ -370,7 +391,10 @@ export const deleteSupplier = async (id: string) => {
 // Coops
 export const getCoops = async (): Promise<Coop[]> => {
     const { data, error } = await supabase.from('avt_coops').select('id, name, location').order('name');
-    if (error) { console.error('Error fetching coops:', error); return []; }
+    if (error) { 
+        console.error('Error fetching coops:', error.message || JSON.stringify(error)); 
+        return []; 
+    }
     return data as Coop[];
 };
 
@@ -387,7 +411,10 @@ export const deleteCoop = async (id: string) => {
 // Drivers List
 export const getDriversList = async (): Promise<MasterItem[]> => {
     const { data, error } = await supabase.from('avt_drivers_list').select('id, value').order('value');
-    if (error) { console.error('Error fetching drivers list:', error); return []; }
+    if (error) { 
+        console.error('Error fetching drivers list:', error.message || JSON.stringify(error)); 
+        return []; 
+    }
     return data as MasterItem[];
 };
 
@@ -404,7 +431,10 @@ export const deleteDriverFromList = async (id: string) => {
 // Plates List
 export const getPlatesList = async (): Promise<MasterItem[]> => {
     const { data, error } = await supabase.from('avt_plates_list').select('id, value').order('value');
-    if (error) { console.error('Error fetching plates list:', error); return []; }
+    if (error) { 
+        console.error('Error fetching plates list:', error.message || JSON.stringify(error)); 
+        return []; 
+    }
     return data as MasterItem[];
 };
 

@@ -3,13 +3,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './services/supabaseClient';
 import { AppView, PurchaseRecord, SaleRecord, LedgerRow, LedgerRow as LedgerRowType, Payment, CustomerPayment, User, SupplierPayment, OnlineUser } from './types';
 import * as Storage from './services/storageService';
-import { logActivity } from './services/logService'; // Import Log Service
+import { logActivity } from './services/logService';
 import PurchaseForm from './components/PurchaseForm';
 import PurchaseList from './components/PurchaseList';
 import DistributionForm from './components/DistributionForm';
 import SalesList from './components/SalesList';
 import LedgerTable from './components/LedgerTable';
-import Dashboard from './components/Dashboard'; // Import Dashboard
+import Dashboard from './components/Dashboard';
 import InvoiceModal from './components/InvoiceModal';
 import PaymentModal from './components/PaymentModal';
 import CustomerStatementModal from './components/CustomerStatementModal';
@@ -17,14 +17,14 @@ import PaymentMenu from './components/PaymentMenu';
 import RecapTable from './components/RecapTable';
 import DriverMenu from './components/DriverMenu';
 import MasterDataMenu from './components/MasterDataMenu';
-import SupplierLedger from './components/SupplierLedger'; // Import New Component
+import SupplierLedger from './components/SupplierLedger';
 import EditSaleModal from './components/EditSaleModal';
 import EditPurchaseModal from './components/EditPurchaseModal';
-import ActivityLogTable from './components/ActivityLogTable'; // Import Activity Log
+import ActivityLogTable from './components/ActivityLogTable';
 import Login from './components/Login';
 import ComplaintModal from './components/ComplaintModal';
-import AboutModal from './components/AboutModal'; // Import About
-import OnlineUserList from './components/OnlineUserList'; // Import Online User List
+import AboutModal from './components/AboutModal';
+import OnlineUserList from './components/OnlineUserList';
 import { LayoutDashboard, ShoppingCart, Truck, Menu, ChevronLeft, Wallet, TrendingUp, Database, User as UserIcon, RefreshCw, List, FileText, PieChart, LogOut, Package, X, Info, History, Radio } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { formatDate, formatCurrency, generateDiff } from './utils';
@@ -32,10 +32,8 @@ import { formatDate, formatCurrency, generateDiff } from './utils';
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   
-  // 1. VIEW PERSISTENCE: Initialize from localStorage if available
   const [currentView, setCurrentView] = useState<AppView>(() => {
     const savedView = localStorage.getItem('avt_current_view');
-    // Safety check: if TV_MODE was saved, revert to OVERVIEW
     if (savedView === 'TV_MODE') return AppView.OVERVIEW;
     return (savedView as AppView) || AppView.OVERVIEW;
   });
@@ -43,33 +41,26 @@ const App: React.FC = () => {
   const [purchases, setPurchases] = useState<PurchaseRecord[]>([]);
   const [sales, setSales] = useState<SaleRecord[]>([]);
   const [customerPayments, setCustomerPayments] = useState<CustomerPayment[]>([]);
-  const [supplierPayments, setSupplierPayments] = useState<SupplierPayment[]>([]); // New State
+  const [supplierPayments, setSupplierPayments] = useState<SupplierPayment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false); // New State for Realtime Feedback
+  const [isSyncing, setIsSyncing] = useState(false);
   
-  // Online Presence State
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [showOnlineUsers, setShowOnlineUsers] = useState(false);
 
-  // Invoice State
   const [invoiceData, setInvoiceData] = useState<LedgerRow | null>(null);
   const [bulkInvoiceData, setBulkInvoiceData] = useState<LedgerRow[] | null>(null);
 
-  // Modals State
   const [selectedSaleForPayment, setSelectedSaleForPayment] = useState<SaleRecord | null>(null);
   const [selectedSaleForEdit, setSelectedSaleForEdit] = useState<SaleRecord | null>(null);
   const [selectedPurchaseForEdit, setSelectedPurchaseForEdit] = useState<PurchaseRecord | null>(null);
   
-  // About Modal
   const [isAboutOpen, setIsAboutOpen] = useState(false);
 
-  // Shortcut State
   const [preSelectedPurchaseId, setPreSelectedPurchaseId] = useState<string | null>(null);
 
-  // Complaint Context (Sale + Parent Purchase)
   const [complaintContext, setComplaintContext] = useState<{sale: SaleRecord, purchase: PurchaseRecord} | null>(null);
 
-  // Customer Statement State
   const [statementParams, setStatementParams] = useState<{
     customer: string;
     customerId?: string;
@@ -77,26 +68,20 @@ const App: React.FC = () => {
     endDate: string;
   } | null>(null);
 
-  // Layout State
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Debounce & Change Tracking Ref for Smart Sync
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const changedTablesRef = useRef<Set<string>>(new Set());
 
-  // 2. VIEW PERSISTENCE: Save to localStorage whenever view changes
   useEffect(() => {
     if (currentView) {
         localStorage.setItem('avt_current_view', currentView);
     }
   }, [currentView]);
 
-  // SMART SYNC: Refresh data granularly
-  // isAutoSync = true means it's a background update (don't block UI with full loader)
   const refreshData = async (isAutoSync = false, tablesToRefresh: string[] = []) => {
     if (isAutoSync) {
-        // Prevent overlapping syncs
         if (isSyncing) return;
         setIsSyncing(true);
     } else {
@@ -107,7 +92,6 @@ const App: React.FC = () => {
         const promises: Promise<void>[] = [];
         const fetchAll = tablesToRefresh.length === 0;
 
-        // Conditional Fetching based on what changed
         if (fetchAll || tablesToRefresh.includes('avt_purchases')) {
             promises.push(Storage.getPurchases().then(setPurchases));
         }
@@ -121,7 +105,6 @@ const App: React.FC = () => {
             promises.push(Storage.getSupplierPayments().then(setSupplierPayments));
         }
 
-        // Execute only necessary requests in parallel
         if (promises.length > 0) {
             await Promise.all(promises);
         }
@@ -130,13 +113,11 @@ const App: React.FC = () => {
         console.error("Failed to load data", e);
     } finally {
         setIsLoading(false);
-        // Add a small delay to keep the "Updating" badge visible long enough to be noticed
         setTimeout(() => setIsSyncing(false), 1500);
     }
   };
 
   useEffect(() => {
-    // Check for user session
     const storedUser = localStorage.getItem('avt_user_session');
     if (storedUser) {
         setUser(JSON.parse(storedUser));
@@ -152,25 +133,23 @@ const App: React.FC = () => {
         }
     };
 
-    handleResize(); // Initial check
+    handleResize(); 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 3. REALTIME SYNC & PRESENCE
   useEffect(() => {
     if (!user) return;
 
-    // Initial fetch (Load All)
     refreshData(false);
 
-    // --- SUPABASE REALTIME PRESENCE ---
     const room = supabase.channel('online-users');
     
     room
     .on('presence', { event: 'sync' }, () => {
         const newState = room.presenceState();
-        const users = Object.values(newState).flat() as OnlineUser[];
+        // Fix: Use 'unknown' cast first to avoid type overlap error
+        const users = Object.values(newState).flat() as unknown as OnlineUser[];
         setOnlineUsers(users);
     })
     .subscribe(async (status) => {
@@ -184,49 +163,42 @@ const App: React.FC = () => {
         }
     });
 
-    // --- SUPABASE REALTIME DATABASE CHANGES (SMART AUTO-REFRESH) ---
     const handleDbChange = (payload: any) => {
-        // Log for debugging
         console.log('Realtime change received:', payload.table);
 
-        // Immediate Feedback
         setIsSyncing(true);
 
         if (debounceRef.current) {
             clearTimeout(debounceRef.current);
         }
         
-        // Track which table changed
         if (payload.table) {
             changedTablesRef.current.add(payload.table);
         }
         
-        // Wait 1 second (debounce) to collect rapid-fire updates, then fetch
         debounceRef.current = setTimeout(() => {
             const tables = Array.from(changedTablesRef.current) as string[];
-            refreshData(true, tables); // Pass true for isAutoSync
-            changedTablesRef.current.clear(); // Reset tracker
+            refreshData(true, tables); 
+            changedTablesRef.current.clear(); 
         }, 1000);
     };
 
-    // Listen to INSERT/UPDATE/DELETE on key tables
     const dbSync = supabase.channel('app-db-sync');
     
     dbSync
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'avt_purchases' }, handleDbChange)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'avt_sales' }, handleDbChange)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'avt_customer_payments' }, handleDbChange)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'avt_supplier_payments' }, handleDbChange)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'avt_driver_transactions' }, handleDbChange)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'avt_customers' }, handleDbChange)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'avt_suppliers' }, handleDbChange)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'avt_purchases' }, (payload) => handleDbChange(payload))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'avt_sales' }, (payload) => handleDbChange(payload))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'avt_customer_payments' }, (payload) => handleDbChange(payload))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'avt_supplier_payments' }, (payload) => handleDbChange(payload))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'avt_driver_transactions' }, (payload) => handleDbChange(payload))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'avt_customers' }, (payload) => handleDbChange(payload))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'avt_suppliers' }, (payload) => handleDbChange(payload))
       .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
               console.log("Realtime Sync Connected");
           }
       });
 
-    // Cleanup
     return () => {
         if (debounceRef.current) clearTimeout(debounceRef.current);
         supabase.removeChannel(room);
@@ -234,18 +206,15 @@ const App: React.FC = () => {
     };
   }, [user]);
 
-  // 4. INTERVAL POLLING (Safety Net / 15s Auto-Refresh)
-  // Optimization: Only runs if tab is visible and no sync is currently in progress
   useEffect(() => {
     if (!user) return;
 
     const intervalId = setInterval(() => {
-        // "Efficient" Check: Stop polling if user is not looking or if app is already working
         if (document.visibilityState === 'visible' && !isLoading && !isSyncing) {
             console.log("Auto-refresh cycle (15s)...");
             refreshData(true);
         }
-    }, 15000); // 15 seconds
+    }, 15000); 
 
     return () => clearInterval(intervalId);
   }, [user, isLoading, isSyncing]);
@@ -260,7 +229,7 @@ const App: React.FC = () => {
     if(user) logActivity(user, 'LOGIN', 'AUTH', `User ${user.username} logged out`);
     setUser(null);
     localStorage.removeItem('avt_user_session');
-    localStorage.removeItem('avt_current_view'); // Optional: Reset view on logout
+    localStorage.removeItem('avt_current_view');
     setCurrentView(AppView.OVERVIEW);
   };
 
@@ -268,11 +237,9 @@ const App: React.FC = () => {
     setIsLoading(true);
     await Storage.savePurchases(records);
     
-    // Log Activity
     const desc = records.map(p => `${p.supplier} (${p.kg}kg)`).join(', ');
     await logActivity(user, 'CREATE', 'PURCHASE', `Added ${records.length} purchases: ${desc}`);
 
-    // await refreshData(); // Auto-handled by Realtime, but for UX instant feedback we can call:
     refreshData(true, ['avt_purchases']); 
     setCurrentView(AppView.PURCHASE_LIST);
   };
@@ -281,19 +248,15 @@ const App: React.FC = () => {
     setIsLoading(true);
     await Storage.saveSale(record);
 
-    // Log Activity
     await logActivity(user, 'CREATE', 'SALE', `Sold ${record.soldKg}kg to ${record.customerName}`, record.id);
 
-    // await refreshData(); // Auto-handled by Realtime
     refreshData(true, ['avt_sales']);
-    setPreSelectedPurchaseId(null); // Clear shortcut state
-    setCurrentView(AppView.SALES_LIST); // Redirect to Sales List after input
+    setPreSelectedPurchaseId(null); 
+    setCurrentView(AppView.SALES_LIST); 
   };
 
   const handleUpdateSale = async (record: SaleRecord) => {
     setIsLoading(true);
-    
-    // 1. OPTIMISTIC UPDATE: Update State Immediately
     setSales(prev => prev.map(s => s.id === record.id ? record : s));
 
     const revisionDate = new Date().toLocaleString('id-ID', { 
@@ -322,14 +285,11 @@ const App: React.FC = () => {
         record.id
     );
 
-    // Confirm with server sync
     refreshData(true, ['avt_sales']);
   };
 
   const handleUpdatePurchase = async (record: PurchaseRecord) => {
     setIsLoading(true);
-
-    // 1. OPTIMISTIC UPDATE: Update State Immediately
     setPurchases(prev => prev.map(p => p.id === record.id ? record : p));
 
     const revisionDate = new Date().toLocaleString('id-ID', { 
@@ -349,7 +309,6 @@ const App: React.FC = () => {
 
     await Storage.updatePurchase(record);
 
-    // Log Activity
     await logActivity(
         user, 
         'UPDATE', 
@@ -358,7 +317,6 @@ const App: React.FC = () => {
         record.id
     );
 
-    // Confirm with server sync
     refreshData(true, ['avt_purchases']);
   };
 
@@ -418,11 +376,10 @@ const App: React.FC = () => {
     await Storage.saveCustomerPayment(newPayment);
     await logActivity(user, 'CREATE', 'PAYMENT', `Added payment ${formatCurrency(amount)} for ${targetSale.customerName}`, newPayment.id);
     refreshData(true, ['avt_customer_payments']);
-    setSelectedSaleForPayment(null); // Close modal
+    setSelectedSaleForPayment(null); 
   };
 
   const handleBulkPayment = async (customerName: string, amount: number, date: string, method: 'CASH' | 'TRANSFER') => {
-      // Trigger background refresh instead of full loader
       refreshData(true, ['avt_customer_payments']);
   };
 
@@ -451,7 +408,6 @@ const App: React.FC = () => {
     setStatementParams({ customer, customerId, startDate, endDate });
   }
 
-  // Transform sales to ledger rows for display
   const ledgerData: LedgerRow[] = sales.map(sale => {
       const purchase = purchases.find(p => p.id === sale.purchaseId);
       const mortalityValue = sale.mortalityKg * sale.sellPrice;
@@ -481,29 +437,26 @@ const App: React.FC = () => {
       };
   }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  // --- SIDEBAR HELPER ---
   const SidebarButton = ({ view, icon: Icon, label, active }: { view: AppView, icon: any, label: string, active: boolean }) => (
     <button 
         onClick={() => {
             setCurrentView(view);
-            if (isMobile) setIsSidebarOpen(false); // Close sidebar on mobile after click
+            if (isMobile) setIsSidebarOpen(false); 
         }} 
         className={`
-            relative w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 whitespace-nowrap text-sm font-medium group
+            relative w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-300 whitespace-nowrap text-sm font-semibold group mb-1.5
             ${active 
-                ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-900/20 ring-1 ring-white/10' 
-                : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 hover:shadow-inner'
+                ? 'bg-gradient-to-r from-red-600 via-red-600 to-rose-600 text-white shadow-[0_4px_12px_-2px_rgba(220,38,38,0.4)] ring-1 ring-white/10' 
+                : 'text-slate-400 hover:bg-white/5 hover:text-slate-100 hover:translate-x-1'
             } 
             ${(!isSidebarOpen && !isMobile) ? 'justify-center px-0' : ''}
         `}
         title={!isSidebarOpen ? label : ''}
     >
-        <Icon className={`w-5 h-5 shrink-0 transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`} /> 
-        {(isSidebarOpen || isMobile) && <span className="tracking-wide">{label}</span>}
-        
-        {/* Active Indicator for Collapsed Mode */}
+        <Icon className={`w-5 h-5 shrink-0 transition-transform duration-300 ${active ? 'scale-110 drop-shadow-md' : 'group-hover:scale-110'}`} /> 
+        {(isSidebarOpen || isMobile) && <span className="tracking-wide text-[13px]">{label}</span>}
         {active && (!isSidebarOpen && !isMobile) && (
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full shadow-[0_0_10px_rgba(255,255,255,0.5)]"></div>
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-red-500 rounded-r-full shadow-[0_0_12px_rgba(220,38,38,0.8)]"></div>
         )}
     </button>
   );
@@ -511,64 +464,63 @@ const App: React.FC = () => {
   const SidebarGroup = ({ title, children }: { title: string, children?: React.ReactNode }) => (
     <div className="mb-6 relative">
          {(isSidebarOpen || isMobile) && (
-            <div className="px-4 mb-3 text-[10px] font-extrabold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+            <div className="px-4 mb-3 text-[10px] font-extrabold text-slate-500 uppercase tracking-widest flex items-center gap-2 opacity-80">
                 {title}
-                <div className="h-px bg-slate-800 flex-1"></div>
+                <div className="h-px bg-slate-800/50 flex-1"></div>
             </div>
          )}
          {(!isSidebarOpen && !isMobile) && (
-             <div className="h-px bg-slate-800 mx-4 mb-3"></div>
+             <div className="h-px bg-slate-800/50 mx-4 mb-3"></div>
          )}
-         <div className="space-y-1 px-3">
+         <div className="px-3">
              {children}
          </div>
     </div>
   );
 
-  // If not logged in, show login screen
   if (!user) {
     return <Login onLogin={handleLogin} />;
   }
 
   return (
     <div className="min-h-screen bg-slate-100 font-sans text-slate-900 flex relative overflow-hidden">
-      
-      {/* Mobile Overlay */}
       {isMobile && isSidebarOpen && (
           <div 
-            className="fixed inset-0 bg-black/50 z-30 backdrop-blur-sm transition-opacity duration-300"
+            className="fixed inset-0 bg-slate-900/60 z-30 backdrop-blur-sm transition-opacity duration-300"
             onClick={() => setIsSidebarOpen(false)}
           />
       )}
 
-      {/* Sidebar */}
       <nav className={`
-            fixed top-0 left-0 h-full bg-slate-900 bg-gradient-to-b from-slate-900 to-slate-950 text-slate-100 flex flex-col shadow-2xl z-40 transition-all duration-300 ease-in-out print:hidden border-r border-slate-800
+            fixed top-0 left-0 h-full text-slate-100 flex flex-col shadow-2xl z-40 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] print:hidden border-r border-slate-800
+            bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-slate-900 via-[#1e1b4b] to-[#450a0a]
             ${isMobile 
                 ? (isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full w-72') 
                 : (isSidebarOpen ? 'w-72' : 'w-20')
             }
         `}>
-        <div className="p-6 flex items-center justify-between h-20 bg-slate-900/50 backdrop-blur-sm border-b border-white/5">
+        <div className="p-6 flex items-center justify-between h-24 bg-gradient-to-b from-slate-900/50 to-transparent backdrop-blur-sm border-b border-white/5">
             <div className={`flex items-center gap-3 ${!isSidebarOpen && !isMobile && 'justify-center w-full'}`}>
-                {/* --- LOGO --- */}
                 <div className="relative group">
-                    <div className="absolute inset-0 bg-red-500 blur-lg opacity-20 group-hover:opacity-40 transition-opacity rounded-full"></div>
+                    <div className="absolute inset-0 bg-red-600 blur-lg opacity-30 group-hover:opacity-60 transition-opacity duration-500 rounded-full"></div>
                     <img 
-                        src="/logo.png" 
+                        src="logo.png" 
                         alt="Logo CV DPJ" 
-                        className="w-8 h-8 object-contain shrink-0 relative z-10" 
+                        className="w-9 h-9 object-contain shrink-0 relative z-10 drop-shadow-md" 
                     />
                 </div>
-                {(isSidebarOpen || isMobile) && <span className="text-lg font-bold tracking-tight whitespace-nowrap text-white">DPJ Berkah Unggas</span>}
+                {(isSidebarOpen || isMobile) && (
+                    <div className="flex flex-col">
+                        <span className="text-lg font-black tracking-tight whitespace-nowrap text-white leading-none">DPJ BERKAH</span>
+                        <span className="text-[10px] font-bold tracking-[0.2em] text-red-400 uppercase mt-1">Unggas System</span>
+                    </div>
+                )}
             </div>
-            {/* Desktop Collapse Button */}
             {!isMobile && (
-                <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`text-slate-400 hover:text-white transition-colors p-1 rounded-md hover:bg-slate-800 ${!isSidebarOpen && 'hidden'}`}>
+                <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`text-slate-400 hover:text-white transition-colors p-1.5 rounded-full hover:bg-white/10 ${!isSidebarOpen && 'hidden'}`}>
                     <ChevronLeft className="w-5 h-5" />
                 </button>
             )}
-            {/* Mobile Close Button */}
             {isMobile && (
                  <button onClick={() => setIsSidebarOpen(false)} className="text-slate-400 hover:text-white p-1">
                     <X className="w-6 h-6" />
@@ -576,21 +528,18 @@ const App: React.FC = () => {
             )}
         </div>
         
-        {/* Desktop Expand Trigger (Icon Only Mode) */}
         {!isSidebarOpen && !isMobile && (
-             <div className="flex justify-center py-4 cursor-pointer hover:bg-slate-800/50 transition-colors" onClick={() => setIsSidebarOpen(true)}>
-                 <Menu className="w-6 h-6 text-slate-400" />
+             <div className="flex justify-center py-4 cursor-pointer hover:bg-white/5 transition-colors group" onClick={() => setIsSidebarOpen(true)}>
+                 <Menu className="w-6 h-6 text-slate-400 group-hover:text-white" />
              </div>
         )}
 
-        <div className="flex-1 py-6 overflow-hidden overflow-y-auto custom-scrollbar">
-            
+        <div className="flex-1 py-6 overflow-hidden overflow-y-auto custom-scrollbar relative">
             <SidebarGroup title="Dashboard">
                 <SidebarButton view={AppView.OVERVIEW} icon={PieChart} label="Overview" active={currentView === AppView.OVERVIEW} />
             </SidebarGroup>
 
             <SidebarGroup title="Transaksi">
-                {/* Merged Input & List into one entry point */}
                 <SidebarButton view={AppView.PURCHASE_LIST} icon={ShoppingCart} label="Pembelian" active={currentView === AppView.PURCHASE_LIST || currentView === AppView.PURCHASE} />
                 <SidebarButton view={AppView.SALES_LIST} icon={Truck} label="Penjualan" active={currentView === AppView.SALES_LIST || currentView === AppView.DISTRIBUTION} />
             </SidebarGroup>
@@ -612,24 +561,25 @@ const App: React.FC = () => {
 
         </div>
         
-        {/* User Info & Logout */}
-        <div className="p-4 bg-slate-900/80 backdrop-blur border-t border-slate-800">
+        <div className="p-4 bg-gradient-to-t from-black/60 to-transparent backdrop-blur border-t border-white/5">
              <div className={`
-                flex items-center gap-3 mb-4 rounded-xl p-3 transition-colors 
-                ${(isSidebarOpen || isMobile) ? 'bg-slate-800/50 border border-slate-700/50' : 'justify-center bg-transparent border-0 p-0'}
+                flex items-center gap-3 mb-4 rounded-xl p-3 transition-colors duration-300
+                ${(isSidebarOpen || isMobile) ? 'bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10' : 'justify-center bg-transparent border-0 p-0'}
              `}>
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white shadow-lg ring-2 ring-slate-700">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white shadow-lg ring-2 ring-white/20">
                     {user.username.charAt(0).toUpperCase()}
                 </div>
                 {(isSidebarOpen || isMobile) && (
                     <div className="overflow-hidden flex-1">
                         <div className="text-sm font-bold text-white truncate">{user.username}</div>
-                        <div className="text-[10px] text-indigo-300 uppercase font-bold tracking-wide">{user.role}</div>
+                        <div className="text-[10px] text-indigo-300 uppercase font-bold tracking-wide flex items-center gap-1">
+                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                            {user.role}
+                        </div>
                     </div>
                 )}
              </div>
              
-             {/* Action Buttons */}
              <div className={`grid ${(isSidebarOpen || isMobile) ? 'grid-cols-2 gap-2' : 'grid-cols-1 gap-3'} `}>
                  <button 
                     onClick={() => setIsAboutOpen(true)}
@@ -653,44 +603,42 @@ const App: React.FC = () => {
       </nav>
 
       <main className={`
-            flex-1 p-4 md:p-10 transition-all duration-300 ease-in-out print:m-0 print:p-0 print:w-full overflow-x-hidden
+            flex-1 p-4 md:p-8 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] print:m-0 print:p-0 print:w-full overflow-x-hidden
             ${isMobile ? 'ml-0 pt-24' : (isSidebarOpen ? 'ml-72' : 'ml-20')}
       `}>
-        {/* Mobile Header Bar */}
-        <div className="md:hidden fixed top-0 left-0 right-0 bg-white shadow-md z-20 px-4 py-3 flex items-center justify-between h-20">
+        <div className="md:hidden fixed top-0 left-0 right-0 bg-gradient-to-r from-slate-900 to-slate-800 shadow-md z-20 px-4 py-3 flex items-center justify-between h-20 text-white">
             <div className="flex items-center gap-3">
-                <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 text-slate-600">
+                <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 text-slate-300 hover:text-white">
                     <Menu className="w-6 h-6" />
                 </button>
                 <div className="flex flex-col">
-                    <span className="font-bold text-slate-800 text-lg leading-tight">DPJ Berkah Unggas</span>
-
-                    <span className="text-[10px] text-slate-500 uppercase">Mobile Access</span>
+                    <span className="font-black text-lg leading-tight tracking-tight">DPJ BERKAH</span>
+                    <span className="text-[10px] text-red-400 uppercase font-bold tracking-wider">Mobile Access</span>
                 </div>
             </div>
-             <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold shadow-sm">
+             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold shadow-lg ring-1 ring-white/20">
                 {user.username.charAt(0).toUpperCase()}
             </div>
         </div>
 
-        <header className="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4 print:hidden">
+        <header className="flex flex-col md:flex-row justify-between md:items-center mb-8 gap-4 print:hidden">
             <div className="flex items-center gap-4">
-                <h1 className="text-xl md:text-2xl font-bold text-slate-800 break-words max-w-full">
+                <div className="hidden md:block w-1 h-8 bg-red-600 rounded-full"></div>
+                <h1 className="text-xl md:text-3xl font-black text-slate-800 tracking-tight break-words max-w-full">
                     {currentView === AppView.OVERVIEW && 'Dashboard Overview'}
-                    {currentView === AppView.LEDGER && '' /* Removed Title */}
-                    {currentView === AppView.SUPPLIER_LEDGER && '' /* Removed Title */}
-                    {currentView === AppView.RECAP && '' /* Removed Title */}
+                    {currentView === AppView.LEDGER && 'Ledger Piutang (AR)'}
+                    {currentView === AppView.SUPPLIER_LEDGER && 'Hutang Supplier (AP)'}
+                    {currentView === AppView.RECAP && 'Analisa Laba Rugi'}
                     {currentView === AppView.PURCHASE && 'Input Pembelian'}
                     {currentView === AppView.PURCHASE_LIST && 'Riwayat Pembelian'}
                     {currentView === AppView.DISTRIBUTION && 'Input Penjualan'}
                     {currentView === AppView.SALES_LIST && 'Riwayat Penjualan'}
-                    {currentView === AppView.PAYMENT && 'Pembayaran'}
+                    {currentView === AppView.PAYMENT && 'Pembayaran Customer'}
                     {currentView === AppView.DRIVER && 'Manajemen Sopir'}
                     {currentView === AppView.MASTER && 'Master Data'}
                     {currentView === AppView.LOGS && 'System Activity Log'}
                 </h1>
                 
-                {/* Manual Refresh Button with Sync Indicator */}
                 <button 
                     onClick={() => refreshData(false)}
                     disabled={isLoading}
@@ -703,12 +651,9 @@ const App: React.FC = () => {
                     title={isSyncing ? "Data sedang disinkronisasi" : "Manual Refresh"}
                 >
                     <RefreshCw className={`w-3.5 h-3.5 ${isLoading || isSyncing ? 'animate-spin' : ''}`} />
-                    
                     <span className="text-xs font-bold hidden md:inline">
                         {isSyncing ? 'Live Updating...' : (isLoading ? 'Syncing...' : 'Refresh Data')}
                     </span>
-                    
-                    {/* Live Indicator Pulse */}
                     {isSyncing && (
                         <span className="flex h-2 w-2 relative">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
@@ -719,7 +664,6 @@ const App: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-3 self-start md:self-auto">
-                {/* ONLINE USERS INDICATOR */}
                 <button 
                     onClick={() => setShowOnlineUsers(true)}
                     className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
@@ -731,18 +675,22 @@ const App: React.FC = () => {
                     <span className="text-xs font-bold text-slate-700">{onlineUsers.length} Online</span>
                 </button>
 
-                <div className="hidden md:block text-sm text-slate-500 bg-white px-4 py-2 rounded-full shadow-sm border">
+                <div className="hidden md:block text-sm text-slate-500 bg-white px-4 py-2 rounded-full shadow-sm border border-slate-200 font-medium">
                     {new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                 </div>
             </div>
         </header>
 
-        <div className="max-w-7xl mx-auto print:max-w-none w-full">
+        <div className={`mx-auto print:max-w-none w-full transition-all duration-300 ${
+            [AppView.LEDGER, AppView.SUPPLIER_LEDGER, AppView.RECAP].includes(currentView) 
+            ? 'max-w-[95%] xl:max-w-[1600px]' 
+            : 'max-w-7xl'
+        }`}>
             {currentView === AppView.OVERVIEW && <Dashboard purchases={purchases} sales={sales} customerPayments={customerPayments} supplierPayments={supplierPayments} />}
             {currentView === AppView.PURCHASE && <PurchaseForm onSave={handleSavePurchases} onCancel={() => setCurrentView(AppView.LEDGER)} />}
-            {currentView === AppView.PURCHASE_LIST && <PurchaseList onEditPurchase={handleOpenPurchaseEditModal} onNewPurchase={() => setCurrentView(AppView.PURCHASE)} onDeletePurchase={handleDeletePurchase} user={user} />}
+            {currentView === AppView.PURCHASE_LIST && <PurchaseList purchases={purchases} onEditPurchase={handleOpenPurchaseEditModal} onNewPurchase={() => setCurrentView(AppView.PURCHASE)} onDeletePurchase={handleDeletePurchase} user={user} />}
             {currentView === AppView.DISTRIBUTION && <DistributionForm purchases={purchases} existingSales={sales} initialPurchaseId={preSelectedPurchaseId} onSaveSale={handleSaveSale} onCancel={() => { setPreSelectedPurchaseId(null); setCurrentView(AppView.LEDGER); }} />}
-            {currentView === AppView.SALES_LIST && <SalesList purchases={purchases} onEditSale={handleOpenEditModal} onPrintInvoice={(row) => setInvoiceData(row)} onComplaint={handleOpenComplaintModal} onDeleteSale={handleDeleteSale} user={user} onNewSale={handleNewSale} />}
+            {currentView === AppView.SALES_LIST && <SalesList purchases={purchases} sales={sales} onEditSale={handleOpenEditModal} onPrintInvoice={(row) => setInvoiceData(row)} onComplaint={handleOpenComplaintModal} onDeleteSale={handleDeleteSale} user={user} onNewSale={handleNewSale} />}
             {currentView === AppView.LEDGER && <LedgerTable data={ledgerData} payments={customerPayments} onViewPayment={handleOpenPaymentModal} onPrintInvoice={(row) => setInvoiceData(row)} onPrintBulkInvoices={(rows) => setBulkInvoiceData(rows)} onShowCustomerStatement={handleShowStatement} onEditSale={handleOpenEditModal} />}
             {currentView === AppView.SUPPLIER_LEDGER && <SupplierLedger purchases={purchases} payments={supplierPayments} sales={sales} onPaymentSaved={() => refreshData(true, ['avt_supplier_payments'])} user={user} />}
             {currentView === AppView.PAYMENT && <PaymentMenu sales={sales} purchases={purchases} customerPayments={customerPayments} onOpenPaymentModal={handleOpenPaymentModal} onBulkPayment={handleBulkPayment} user={user} />}
@@ -758,7 +706,6 @@ const App: React.FC = () => {
       {selectedSaleForEdit && <EditSaleModal sale={selectedSaleForEdit} onClose={() => setSelectedSaleForEdit(null)} onSave={handleUpdateSale} />}
       {selectedPurchaseForEdit && <EditPurchaseModal purchase={selectedPurchaseForEdit} onClose={() => setSelectedPurchaseForEdit(null)} onSave={handleUpdatePurchase} />}
       
-      {/* Complaint Modal */}
       {complaintContext && (
           <ComplaintModal 
             sale={complaintContext.sale}
@@ -780,10 +727,8 @@ const App: React.FC = () => {
         onClose={() => setStatementParams(null)} 
       />}
 
-      {/* About Modal */}
       {isAboutOpen && <AboutModal onClose={() => setIsAboutOpen(false)} />}
       
-      {/* Online Users List Modal */}
       {showOnlineUsers && <OnlineUserList users={onlineUsers} onClose={() => setShowOnlineUsers(false)} currentUser={user} />}
     </div>
   );

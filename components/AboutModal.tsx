@@ -7,64 +7,50 @@ interface AboutModalProps {
 }
 
 const AboutModal: React.FC<AboutModalProps> = ({ onClose }) => {
-  const appVersion = "1.8.0";
+  const appVersion = "1.9.0";
   const lastUpdate = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
   const changelogs = [
     {
-        version: "1.8.0",
-        date: "Dashboard & Analysis Upgrade",
+        version: "1.9.0",
+        date: "Pagination, Filter & Ledger UI Update",
         features: [
-            "UI/UX Fix: Perbaikan ukuran font pada kartu Dashboard agar tidak terpotong di layar laptop (Responsive Typography).",
-            "Dashboard Analytics: Fitur interaktif 'Net Profit' (Klik kartu Profit untuk melihat detail rumus perhitungan & analisis margin).",
-            "Top 10 Leaderboards: Penambahan list Top 10 Piutang Tertinggi, Top 10 Penjualan, dan Top 10 Supplier.",
-            "Ledger Fix: Perbaikan bug baris kosong (ghost rows) pada laporan Customer Statement.",
-            "Visual Update: Layout Dashboard baru dengan 3 kolom untuk monitoring kinerja yang lebih baik.",
-            "Fix Date Logic, Add date range picker"
+            "Kartu Piutang: Optimasi tampilan tabel menjadi lebih ringkas (Compact Mode) dan penandaan warna merah untuk stok mati.",
+            "Advanced Filter: Penambahan filter tanggal (Date Range) dan pencarian spesifik pada Riwayat Pembelian & Penjualan.",
+            "Pagination System: Implementasi paging (50 data per halaman) untuk performa lebih ringan saat data menumpuk.",
+            "Layout Optimization: Memaksimalkan area tabel untuk tampilan desktop yang lebih luas dan nyaman.",
+            "Bug Fixes: Perbaikan error saat fetch data penjualan dan pembelian."
+        ]
+    },
+    {
+        version: "1.8.0",
+        date: "Visual Upgrade & Logic Fix",
+        features: [
+            "Visual Update: Tampilan Tabel Riwayat Pembelian & Penjualan lebih berwarna dan mudah dibaca (Color-coded Headers).",
+            "Bug Fix: Perbaikan logika perhitungan Net Profit pada Dashboard (Menggunakan HPP/COGS vs Cash Flow).",
+            "Dashboard: Kartu 'Net Profit' sekarang menampilkan detail HPP (Harga Pokok Penjualan) saat diklik.",
+            "Improvement: Penambahan informasi visual pada header tabel untuk kolom 'Total Tagihan' dan 'Total Invoice'.",
+            "UI/UX Fix: Konsistensi warna pada tombol aksi dan layout tabel."
         ]
     },
     {
         version: "1.7.0",
         date: "Smart Sync & Optimization",
         features: [
-            "Smart Realtime Sync: Sinkronisasi data cerdas yang hanya memuat ulang tabel yang berubah (Granular Fetching).",
-            "Anti-Looping: Mencegah refresh berulang-ulang saat koneksi tidak stabil atau saat input massal.",
-            "Database Indexing Support: Penambahan script index pada database untuk mempercepat query data ribuan baris.",
-            "Performance: Loading aplikasi jauh lebih cepat dan hemat bandwidth."
+            "Smart Realtime Sync: Sinkronisasi data cerdas yang hanya memuat ulang tabel yang berubah.",
+            "Anti-Looping: Mencegah refresh berulang-ulang saat koneksi tidak stabil.",
+            "Database Indexing Support: Penambahan script index untuk mempercepat query.",
+            "Performance: Loading aplikasi lebih cepat dan hemat bandwidth."
         ]
     },
     {
         version: "1.6.0",
         date: "Performance & Efficiency Update",
         features: [
-            "Performance: Implementasi Server-Side Pagination (Data dimuat per halaman, aplikasi lebih ringan & cepat)",
-            "Efficiency: Optimasi Query Database (Mengurangi penggunaan kuota internet secara signifikan)",
-            "Realtime: Sinkronisasi data otomatis antar device/user tanpa perlu refresh manual",
-            "UI/UX: Perbaikan tata letak Dashboard, Login, dan Menu Master agar lebih compact & responsif",
-            "Fixed: Isu visual pada tampilan mobile"
-        ]
-    },
-    {
-        version: "1.4.0",
-        date: "Fitur Monitoring & Log",
-        features: [
-            "Fitur Monitoring User Online (Realtime Presence)",
-            "Fitur Activity Log (Rekam jejak aktivitas user & keamanan)",
-            "Detail Revisi (Mencatat perubahan data spesifik: Sebelum vs Sesudah)",
-            "SQL Schema Viewer (Bantuan teknis untuk setup database)",
-            "Optimistic UI (Update data Penjualan & Pembelian instan tanpa loading)"
-        ]
-    },
-    {
-        version: "1.3.0",
-        date: "Manajemen Hutang",
-        features: [
-            "Fitur Login & Multi-Role (Admin / Super Admin)",
-            "Manajemen Hutang Supplier (AP) & Kartu Hutang",
-            "Fitur Hapus Transaksi (Khusus Super Admin)",
-            "Surat Komplain Supplier (PDF Generator)",
-            "Fitur Revisi Pembayaran Customer",
-            "Optimalisasi Tampilan Mobile (Responsif)"
+            "Performance: Implementasi Server-Side Pagination.",
+            "Efficiency: Optimasi Query Database.",
+            "Realtime: Sinkronisasi data otomatis.",
+            "UI/UX: Perbaikan tata letak Dashboard dan Login."
         ]
     }
   ];
@@ -81,7 +67,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ onClose }) => {
 
         <div className="p-8 text-center bg-slate-50 border-b border-slate-100">
             <div className="w-20 h-20 bg-white rounded-2xl shadow-sm border border-slate-200 mx-auto mb-4 flex items-center justify-center p-2">
-                <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
+                <img src="logo.png" alt="Logo" className="w-full h-full object-contain" />
             </div>
             <h2 className="text-xl font-extrabold text-slate-800">CV DPJ Berkah Unggas</h2>
             <div className="flex justify-center items-center gap-2 mt-2">

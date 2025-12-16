@@ -43,7 +43,7 @@ const EditPurchaseModal: React.FC<EditPurchaseModalProps> = ({ purchase, onClose
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: parseFloat(value) || 0
+      [name]: name === 'date' ? value : (parseFloat(value) || 0)
     }));
   };
 
@@ -85,6 +85,17 @@ const EditPurchaseModal: React.FC<EditPurchaseModalProps> = ({ purchase, onClose
             </div>
 
             <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Tanggal</label>
+                    <input 
+                        type="date" 
+                        name="date" 
+                        value={formData.date || ''} 
+                        onChange={handleChange} 
+                        className="w-full border-slate-300 rounded p-2 text-sm" 
+                    />
+                </div>
+
                 <div className="col-span-2">
                     <SearchableSelect 
                         label="Supplier (Opsional)"

@@ -152,16 +152,25 @@ const Dashboard: React.FC<DashboardProps> = ({ purchases, sales, customerPayment
     
     const totalOpsCost = totalUnloading + totalTruck + totalOps;
 
-    // Totals from Purchases
-    const totalBuyCost = filteredPurchases.reduce((sum, p) => sum + p.totalBuyCost, 0);
+    // Totals from Purchases (Cash Flow)
+    const totalBuyCostCashFlow = filteredPurchases.reduce((sum, p) => sum + p.totalBuyCost, 0);
     const totalBuyKg = filteredPurchases.reduce((sum, p) => sum + p.kg, 0);
+
+    // COGS Calculation (Accrual)
+    // Estimate cost of birds sold/died based on their original purchase price
+    const totalCOGS = filteredSales.reduce((sum, s) => {
+        const p = purchases.find(p => p.id === s.purchaseId);
+        const buyPrice = p ? p.buyPrice : 0;
+        // Cost includes Sold + Died birds
+        return sum + ((s.soldKg + s.mortalityKg) * buyPrice);
+    }, 0);
 
     // Shrinkage
     const shrinkageKg = Math.max(0, totalBuyKg - (totalSoldKg + totalMortalityKg));
     const shrinkagePct = totalBuyKg > 0 ? (shrinkageKg / totalBuyKg) * 100 : 0;
     
-    // Profit
-    const netProfit = totalSalesRevenue - totalBuyCost - totalOpsCost;
+    // Net Profit (Accrual Basis)
+    const netProfit = totalSalesRevenue - totalCOGS - totalOpsCost;
     const marginPct = totalSalesRevenue > 0 ? (netProfit / totalSalesRevenue) * 100 : 0;
 
     // Derived per Unit
@@ -173,7 +182,8 @@ const Dashboard: React.FC<DashboardProps> = ({ purchases, sales, customerPayment
 
     return {
         revenue: totalSalesRevenue,
-        buyCost: totalBuyCost,
+        buyCost: totalBuyCostCashFlow, // Displayed in "Total Pembelian" card
+        cogs: totalCOGS, // Used for Profit Calculation
         opsCost: totalOpsCost,
         breakdownOps: { totalUnloading, totalTruck, totalOps },
         profit: netProfit,
@@ -187,7 +197,7 @@ const Dashboard: React.FC<DashboardProps> = ({ purchases, sales, customerPayment
         shrinkage: shrinkageKg,
         shrinkagePct: shrinkagePct
     };
-  }, [filteredPurchases, filteredSales]);
+  }, [filteredPurchases, filteredSales, purchases]);
 
   // Top Customers (Volume/Sales) - TOP 10
   const topCustomers = useMemo(() => {
@@ -584,8 +594,8 @@ const Dashboard: React.FC<DashboardProps> = ({ purchases, sales, customerPayment
                                    <span className="font-mono font-bold">{formatCurrency(metrics.revenue)}</span>
                                </div>
                                <div className="flex justify-between items-center text-sm">
-                                   <span className="font-bold text-slate-600">(-) Total Pembelian (Cost)</span>
-                                   <span className="font-mono text-red-500">({formatCurrency(metrics.buyCost)})</span>
+                                   <span className="font-bold text-slate-600">(-) HPP (Cost of Goods Sold)</span>
+                                   <span className="font-mono text-red-500">({formatCurrency(metrics.cogs)})</span>
                                </div>
                                <div className="flex justify-between items-center text-sm">
                                    <span className="font-bold text-slate-600">(-) Operational Expenses</span>

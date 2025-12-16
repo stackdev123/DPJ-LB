@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState } from 'react';
 import { PurchaseRecord, SaleRecord, SupplierPayment, User } from '../types';
 import { X, Printer, ImageDown, Plus, Trash2 } from 'lucide-react';
@@ -190,7 +191,7 @@ const SupplierStatementModal: React.FC<SupplierStatementModalProps> = ({
              <div className="mb-6 pb-6 border-b-2 border-slate-800">
                 <div className="flex justify-between items-start">
                     <div className="flex gap-4 items-center">
-                    <img src="/logo.png" alt="Logo" className="h-16 w-auto object-contain" />
+                    <img src="logo.png" alt="Logo" className="h-16 w-auto object-contain" />
                     <div>
                         <h1 className="text-2xl font-bold uppercase text-slate-800">KARTU HUTANG SUPPLIER</h1>
                         <h2 className="text-xl font-bold text-indigo-700 mt-1">{supplierName}</h2>
@@ -231,15 +232,15 @@ const SupplierStatementModal: React.FC<SupplierStatementModalProps> = ({
             </div>
 
             {/* Table */}
-            <div className="overflow-hidden rounded-lg border border-slate-200 print:border-black">
+            <div className="overflow-x-auto rounded-lg border border-slate-200 print:border-black">
                 <table className="w-full text-sm text-left">
                     <thead className="bg-slate-100 text-slate-600 font-bold uppercase text-xs print:bg-slate-200 print:text-black">
                         <tr>
-                            <th className="p-3 border-b text-center">Tanggal</th>
-                            <th className="p-3 border-b">Keterangan / Ref</th>
-                            <th className="p-3 border-b text-right">Tagihan (Debit)</th>
-                            <th className="p-3 border-b text-right">Pembayaran (Credit)</th>
-                            <th className="p-3 border-b text-right bg-slate-200 print:bg-slate-300">Saldo Hutang</th>
+                            <th className="p-3 border-b text-center whitespace-nowrap">Tanggal</th>
+                            <th className="p-3 border-b whitespace-nowrap">Keterangan / Ref</th>
+                            <th className="p-3 border-b text-right whitespace-nowrap">Tagihan (Debit)</th>
+                            <th className="p-3 border-b text-right whitespace-nowrap">Pembayaran (Credit)</th>
+                            <th className="p-3 border-b text-right bg-slate-200 print:bg-slate-300 whitespace-nowrap">Saldo Hutang</th>
                             <th className="p-3 border-b w-10 print:hidden"></th>
                         </tr>
                     </thead>
@@ -258,19 +259,19 @@ const SupplierStatementModal: React.FC<SupplierStatementModalProps> = ({
                         {rows.map(row => (
                             <tr key={row.id} className="hover:bg-slate-50 border-b border-slate-100">
                                 <td className="p-3 whitespace-nowrap text-center">{formatDate(row.date)}</td>
-                                <td className="p-3">
+                                <td className="p-3 min-w-[200px]">
                                     <div className="font-medium text-slate-800">{row.description}</div>
                                     <div className={`text-[10px] font-bold uppercase tracking-wide inline-block px-1 rounded ${row.type === 'PURCHASE' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
                                         {row.type === 'PURCHASE' ? 'BELI' : 'BAYAR'}
                                     </div>
                                 </td>
-                                <td className="p-3 text-right font-mono text-slate-700">
+                                <td className="p-3 text-right font-mono text-slate-700 whitespace-nowrap">
                                     {row.debit > 0 ? formatCurrency(row.debit) : '-'}
                                 </td>
-                                <td className="p-3 text-right font-mono text-green-700 font-semibold">
+                                <td className="p-3 text-right font-mono text-green-700 font-semibold whitespace-nowrap">
                                     {row.credit > 0 ? formatCurrency(row.credit) : '-'}
                                 </td>
-                                <td className={`p-3 text-right font-mono font-bold bg-slate-50/50 ${row.balance < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                <td className={`p-3 text-right font-mono font-bold bg-slate-50/50 whitespace-nowrap ${row.balance < 0 ? 'text-red-600' : 'text-green-600'}`}>
                                     {formatCurrency(row.balance)}
                                 </td>
                                 <td className="p-3 text-center print:hidden">
@@ -296,10 +297,10 @@ const SupplierStatementModal: React.FC<SupplierStatementModalProps> = ({
                     </tbody>
                     <tfoot className="bg-slate-100 font-bold border-t border-slate-200">
                         <tr>
-                            <td colSpan={2} className="p-3 text-right uppercase text-xs text-slate-500">Total Periode</td>
-                            <td className="p-3 text-right font-mono">{formatCurrency(totalDebit)}</td>
-                            <td className="p-3 text-right font-mono text-green-700">{formatCurrency(totalCredit)}</td>
-                            <td className={`p-3 text-right font-mono ${closingBalance < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                            <td colSpan={2} className="p-3 text-right uppercase text-xs text-slate-500 whitespace-nowrap">Total Periode</td>
+                            <td className="p-3 text-right font-mono whitespace-nowrap">{formatCurrency(totalDebit)}</td>
+                            <td className="p-3 text-right font-mono text-green-700 whitespace-nowrap">{formatCurrency(totalCredit)}</td>
+                            <td className={`p-3 text-right font-mono whitespace-nowrap ${closingBalance < 0 ? 'text-red-600' : 'text-green-600'}`}>
                                 {formatCurrency(closingBalance)}
                             </td>
                             <td className="print:hidden"></td>
