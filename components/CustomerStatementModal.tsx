@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import { SaleRecord, CustomerPayment } from '../types';
 import { X, Printer, ImageDown } from 'lucide-react';
 import { formatDate, formatCurrency, downloadAsImage } from '../utils';
+import Logo from './Logo';
 
 interface CustomerStatementModalProps {
   customerName: string;
@@ -190,7 +191,7 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                  <div className="mb-4 pb-4 border-b-2 border-slate-800">
                     <div className="flex justify-between items-start">
                         <div className="flex gap-4 items-center">
-                        <img src="/logo.png" alt="Logo" className="h-12 md:h-16 w-auto object-contain" />
+                        <Logo className="h-12 md:h-16 w-12 md:w-16 text-red-600" />
                         <div>
                             <h1 className="text-xl md:text-2xl font-bold uppercase text-slate-800">KARTU PIUTANG CUSTOMER</h1>
                             <div className="text-[10px] md:text-xs text-slate-500 mt-1">CV. DPJ Berkah Unggas</div>

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { login } from '../services/authService';
 import { User } from '../types';
 import { Loader2, Lock, User as UserIcon, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import Logo from './Logo';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -55,11 +56,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             
             <div className="relative inline-block group cursor-default">
                 <div className="absolute inset-0 bg-red-500 blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-700 rounded-full"></div>
-                <img 
-                    src="/logo.png" 
-                    alt="Logo CV DPJ" 
-                    className="w-28 h-28 mx-auto object-contain relative z-10 drop-shadow-xl transform transition-transform group-hover:scale-105 duration-500" 
-                />
+                <Logo className="w-28 h-28 mx-auto text-slate-800 relative z-10 drop-shadow-xl transform transition-transform group-hover:scale-105 duration-500" />
             </div>
             
             <h1 className="text-2xl font-extrabold text-slate-800 mt-4 tracking-tight">

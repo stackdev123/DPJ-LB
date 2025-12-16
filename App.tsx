@@ -26,6 +26,7 @@ import ComplaintModal from './components/ComplaintModal';
 import AboutModal from './components/AboutModal';
 import OnlineUserList from './components/OnlineUserList';
 import TvDashboard from './components/TvDashboard';
+import Logo from './components/Logo';
 import { LayoutDashboard, ShoppingCart, Truck, Menu, ChevronLeft, Wallet, TrendingUp, Database, User as UserIcon, RefreshCw, List, FileText, PieChart, LogOut, Package, X, Info, History, Radio, MonitorPlay } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { formatDate, formatCurrency, generateDiff } from './utils';
@@ -521,11 +522,7 @@ const App: React.FC = () => {
             <div className={`flex items-center gap-3 ${!isSidebarOpen && !isMobile && 'justify-center w-full'}`}>
                 <div className="relative group">
                     <div className="absolute inset-0 bg-red-600 blur-lg opacity-30 group-hover:opacity-60 transition-opacity duration-500 rounded-full"></div>
-                    <img 
-                        src="/logo.png" 
-                        alt="Logo CV DPJ" 
-                        className="w-9 h-9 object-contain shrink-0 relative z-10 drop-shadow-md" 
-                    />
+                    <Logo className="w-9 h-9 text-white relative z-10 drop-shadow-md" />
                 </div>
                 {(isSidebarOpen || isMobile) && (
                     <div className="flex flex-col">

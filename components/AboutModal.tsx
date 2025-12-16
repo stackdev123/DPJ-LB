@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { X, Info, CheckCircle2 } from 'lucide-react';
+import Logo from './Logo';
 
 interface AboutModalProps {
   onClose: () => void;
@@ -67,7 +68,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ onClose }) => {
 
         <div className="p-8 text-center bg-slate-50 border-b border-slate-100">
             <div className="w-20 h-20 bg-white rounded-2xl shadow-sm border border-slate-200 mx-auto mb-4 flex items-center justify-center p-2">
-                <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
+                <Logo className="w-full h-full text-red-600" />
             </div>
             <h2 className="text-xl font-extrabold text-slate-800">CV DPJ Berkah Unggas</h2>
             <div className="flex justify-center items-center gap-2 mt-2">

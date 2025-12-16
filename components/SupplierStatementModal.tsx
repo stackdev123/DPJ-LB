@@ -6,6 +6,7 @@ import { formatDate, formatCurrency, downloadAsImage } from '../utils';
 import * as Storage from '../services/storageService';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import { logActivity } from '../services/logService';
+import Logo from './Logo';
 
 interface SupplierStatementModalProps {
   supplierName: string;
@@ -191,7 +192,7 @@ const SupplierStatementModal: React.FC<SupplierStatementModalProps> = ({
              <div className="mb-6 pb-6 border-b-2 border-slate-800">
                 <div className="flex justify-between items-start">
                     <div className="flex gap-4 items-center">
-                    <img src="/logo.png" alt="Logo" className="h-16 w-auto object-contain" />
+                    <Logo className="h-16 w-16 text-red-600" />
                     <div>
                         <h1 className="text-2xl font-bold uppercase text-slate-800">KARTU HUTANG SUPPLIER</h1>
                         <h2 className="text-xl font-bold text-indigo-700 mt-1">{supplierName}</h2>
