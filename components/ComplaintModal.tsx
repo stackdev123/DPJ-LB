@@ -137,7 +137,7 @@ const ComplaintModal: React.FC<ComplaintModalProps> = ({ purchase, sale, onClose
                     >
                         {/* HEADER */}
                         <div className="flex items-center border-b-4 border-double border-black pb-4 mb-8">
-                            <img src="logo.png" alt="Logo" className="h-24 w-auto object-contain mr-6" />
+                            <img src="/logo.png" alt="Logo" className="h-24 w-auto object-contain mr-6" />
                             <div className="text-center w-full">
                                 <h1 className="text-2xl font-bold uppercase tracking-wide">CV. DPJ BERKAH UNGGAS</h1>
                                 <p className="text-sm">Kp. Pangkalan RT. 010 RW. 004 Desa Pangkalan Kecamatan Bojong</p>
@@ -231,7 +231,7 @@ const ComplaintModal: React.FC<ComplaintModalProps> = ({ purchase, sale, onClose
                                 <div className="h-28 w-full flex items-center justify-center relative my-2">
                                      {/* TANDA TANGAN IMAGE */}
                                      <img 
-                                        src="img35.jpg" 
+                                        src="/img35.jpg" 
                                         alt="Tanda Tangan Panji" 
                                         className="h-full w-auto object-contain scale-125"
                                         style={{ mixBlendMode: 'multiply' }} 

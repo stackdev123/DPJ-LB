@@ -90,7 +90,7 @@ const TvDashboard: React.FC<TvDashboardProps> = ({
       <div className="h-24 bg-slate-900 border-b border-slate-800 flex justify-between items-center px-8 shadow-2xl relative z-20">
           <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-gradient-to-br from-red-600 to-red-900 rounded-xl flex items-center justify-center shadow-lg border border-white/10">
-                  <img src="logo.png" alt="Logo" className="w-10 h-10 object-contain brightness-0 invert" />
+                  <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain brightness-0 invert" />
               </div>
               <div>
                   <h1 className="text-3xl font-black tracking-tight text-white uppercase">DPJ Live Monitor</h1>

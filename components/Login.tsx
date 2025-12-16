@@ -56,7 +56,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <div className="relative inline-block group cursor-default">
                 <div className="absolute inset-0 bg-red-500 blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-700 rounded-full"></div>
                 <img 
-                    src="logo.png" 
+                    src="/logo.png" 
                     alt="Logo CV DPJ" 
                     className="w-28 h-28 mx-auto object-contain relative z-10 drop-shadow-xl transform transition-transform group-hover:scale-105 duration-500" 
                 />

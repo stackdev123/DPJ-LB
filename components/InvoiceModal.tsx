@@ -57,7 +57,7 @@ const InvoiceTemplate: React.FC<{ data: LedgerRow }> = ({ data }) => {
                 <div className="text-right text-xs leading-relaxed">
                     <div className="font-bold text-red-600 text-lg mb-2 flex justify-end items-center gap-3">
                         {/* LOGO */}
-                        <img src="logo.png" alt="Logo" className="h-10 w-auto object-contain" />
+                        <img src="/logo.png" alt="Logo" className="h-10 w-auto object-contain" />
                         <span>CV. DPJ Berkah Unggas</span>
                     </div>
                     <p>Kp. Pangkalan No. 436, Desa Pangkalan, Kec.</p>

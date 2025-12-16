@@ -190,7 +190,7 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                  <div className="mb-4 pb-4 border-b-2 border-slate-800">
                     <div className="flex justify-between items-start">
                         <div className="flex gap-4 items-center">
-                        <img src="logo.png" alt="Logo" className="h-12 md:h-16 w-auto object-contain" />
+                        <img src="/logo.png" alt="Logo" className="h-12 md:h-16 w-auto object-contain" />
                         <div>
                             <h1 className="text-xl md:text-2xl font-bold uppercase text-slate-800">KARTU PIUTANG CUSTOMER</h1>
                             <div className="text-[10px] md:text-xs text-slate-500 mt-1">CV. DPJ Berkah Unggas</div>
