@@ -428,7 +428,7 @@ const RecapTable: React.FC<RecapTableProps> = ({ purchases, sales, onEditPurchas
                                                                 <td className="p-2 font-mono text-slate-500">@{formatCurrency(sale.sellPrice)}</td>
                                                                 <td className="p-2 text-right text-slate-400">{sale.unloadingCost > 0 ? formatCurrency(sale.unloadingCost) : '-'}</td>
                                                                 <td className="p-2 text-right text-slate-400">{sale.driverBonus > 0 ? formatCurrency(sale.driverBonus) : '-'}</td>
-                                                                <td className="p-2 text-right text-slate-400">{sale.operationalCost > 0 ? formatCurrency(sale.operationalCost) : '-'}</td>
+                                                                <td className="p-2 text-right text-slate-400">{(sale.operationalCost || 0) > 0 ? formatCurrency(sale.operationalCost || 0) : '-'}</td>
                                                                 <td className="p-2 text-right font-bold text-blue-700">
                                                                     {formatCurrency((sale.soldKg - sale.mortalityKg) * sale.sellPrice)}
                                                                 </td>
