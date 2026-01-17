@@ -1,17 +1,12 @@
+
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
 
 export default defineConfig({
   plugins: [
     react()
   ],
-  resolve: {
-    alias: {
-      '@': path.resolve('.')
-    }
-  },
-  // Use '/' for standard web deployment (Vercel/Netlify)
+  // Base path for standard deployment
   base: '/', 
   build: {
     outDir: 'dist',

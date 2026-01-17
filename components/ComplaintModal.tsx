@@ -3,7 +3,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { PurchaseRecord, SaleRecord } from '../types';
 import { X, Printer, FileText, FileWarning, ArrowRight } from 'lucide-react';
 import { formatDate, downloadAsPDF } from '../utils';
-import Logo from './Logo';
 
 interface ComplaintModalProps {
   purchase: PurchaseRecord; // The parent purchase (for Plate, Supplier, etc)
@@ -138,7 +137,7 @@ const ComplaintModal: React.FC<ComplaintModalProps> = ({ purchase, sale, onClose
                     >
                         {/* HEADER */}
                         <div className="flex items-center border-b-4 border-double border-black pb-4 mb-8">
-                            <Logo className="h-24 w-24 text-red-600 mr-6" />
+                            <img src="logo.png" alt="Logo" className="h-24 w-auto object-contain mr-6" />
                             <div className="text-center w-full">
                                 <h1 className="text-2xl font-bold uppercase tracking-wide">CV. DPJ BERKAH UNGGAS</h1>
                                 <p className="text-sm">Kp. Pangkalan RT. 010 RW. 004 Desa Pangkalan Kecamatan Bojong</p>
@@ -231,10 +230,12 @@ const ComplaintModal: React.FC<ComplaintModalProps> = ({ purchase, sale, onClose
                                 
                                 <div className="h-28 w-full flex items-center justify-center relative my-2">
                                      {/* TANDA TANGAN IMAGE */}
-                                     {/* Use fallback text if image missing */}
-                                     <div className="h-full w-full flex items-center justify-center text-slate-300 italic border border-dashed border-slate-200">
-                                         [Tanda Tangan]
-                                     </div>
+                                     <img 
+                                        src="img35.jpg" 
+                                        alt="Tanda Tangan Panji" 
+                                        className="h-full w-auto object-contain scale-125"
+                                        style={{ mixBlendMode: 'multiply' }} 
+                                     />
                                 </div>
                                 
                                 <p className="font-bold underline text-lg mt-2">( Panji Pranantias )</p>

@@ -1,3 +1,4 @@
+
 import { supabase } from './supabaseClient';
 import { PurchaseRecord, SaleRecord, DriverTransaction, Customer, Supplier, Coop, MasterItem, CustomerPayment, SupplierPayment } from '../types';
 
@@ -92,6 +93,7 @@ const mapCustomerPaymentToDB = (p: CustomerPayment) => ({
     customer_name: p.customerName,
     transfer_amount: p.transferAmount,
     cash_amount: p.cashAmount,
+    // Fix: Access properties of CustomerPayment using camelCase to match the interface definition
     unloading_cost: p.unloadingCost,
     driver_bonus: p.driverBonus,
     other_cost: p.otherCost,
@@ -135,56 +137,44 @@ const mapDriverTxToDB = (t: DriverTransaction) => ({
     notes: t.notes
 });
 
+// --- GENERIC FETCH HELPER (To bypass 1000 row limit) ---
+
+const fetchLargeData = async (table: string, columns: string, orderBy: string = 'date', limit: number = 5000) => {
+    let allData: any[] = [];
+    let from = 0;
+    let step = 1000; // PostgREST standard limit
+    
+    while (from < limit) {
+        const to = from + step - 1;
+        const { data, error } = await supabase
+            .from(table)
+            .select(columns)
+            .order(orderBy, { ascending: false })
+            .range(from, to);
+            
+        if (error) {
+            console.error(`Error fetching ${table}:`, error.message);
+            break;
+        }
+        
+        if (!data || data.length === 0) break;
+        
+        allData = [...allData, ...data];
+        if (data.length < step) break; // No more data to fetch
+        from += step;
+    }
+    
+    return allData;
+};
 
 // --- TRANSACTIONS ---
 
 export const getPurchases = async (): Promise<PurchaseRecord[]> => {
-    const { data, error } = await supabase
-        .from('avt_purchases')
-        .select('id, date, supplier, coop, driver, plate, heads, kg, avg_weight, buy_price, total_buy_cost, is_distributed')
-        .order('date', { ascending: false });
-    
-    if (error) { 
-        console.error('Error fetching purchases:', error.message || JSON.stringify(error)); 
-        return []; 
-    }
+    const data = await fetchLargeData(
+        'avt_purchases', 
+        'id, date, supplier, coop, driver, plate, heads, kg, avg_weight, buy_price, total_buy_cost, is_distributed'
+    );
     return data.map(mapPurchaseFromDB);
-};
-
-// --- PAGINATED PURCHASES ---
-export const getPurchasesPaginated = async (
-    page: number, 
-    pageSize: number, 
-    filters?: { date?: string, supplier?: string, coop?: string, plate?: string }
-): Promise<{ data: PurchaseRecord[], count: number }> => {
-    
-    let query = supabase
-        .from('avt_purchases')
-        .select('id, date, supplier, coop, driver, plate, heads, kg, avg_weight, buy_price, total_buy_cost, is_distributed', { count: 'exact' });
-
-    // Apply Filters
-    if (filters?.date) query = query.eq('date', filters.date);
-    if (filters?.supplier) query = query.eq('supplier', filters.supplier);
-    if (filters?.coop) query = query.eq('coop', filters.coop);
-    if (filters?.plate) query = query.eq('plate', filters.plate);
-
-    // Apply Pagination
-    const from = (page - 1) * pageSize;
-    const to = from + pageSize - 1;
-    
-    const { data, error, count } = await query
-        .order('date', { ascending: false })
-        .range(from, to);
-
-    if (error) { 
-        console.error('Error fetching purchases (paginated):', error.message || JSON.stringify(error)); 
-        return { data: [], count: 0 }; 
-    }
-    
-    return { 
-        data: data ? data.map(mapPurchaseFromDB) : [], 
-        count: count || 0 
-    };
 };
 
 export const savePurchases = async (newPurchases: PurchaseRecord[]) => {
@@ -207,50 +197,11 @@ export const deletePurchase = async (id: string) => {
 };
 
 export const getSales = async (): Promise<SaleRecord[]> => {
-    const { data, error } = await supabase
-        .from('avt_sales')
-        .select('id, purchase_id, customer_id, customer_name, customer_address, date, sold_heads, sold_kg, sell_price, mortality_heads, mortality_kg, unloading_cost, driver_bonus, operational_cost, truck_cost, payments')
-        .order('date', { ascending: false });
-
-    if (error) { 
-        console.error('Error fetching sales:', error.message || JSON.stringify(error)); 
-        return []; 
-    }
+    const data = await fetchLargeData(
+        'avt_sales',
+        'id, purchase_id, customer_id, customer_name, customer_address, date, sold_heads, sold_kg, sell_price, mortality_heads, mortality_kg, unloading_cost, driver_bonus, operational_cost, truck_cost, payments'
+    );
     return data.map(mapSaleFromDB);
-};
-
-// --- PAGINATED SALES ---
-export const getSalesPaginated = async (
-    page: number, 
-    pageSize: number,
-    filters?: { date?: string, customerName?: string }
-): Promise<{ data: SaleRecord[], count: number }> => {
-    
-    let query = supabase
-        .from('avt_sales')
-        .select('id, purchase_id, customer_id, customer_name, customer_address, date, sold_heads, sold_kg, sell_price, mortality_heads, mortality_kg, unloading_cost, driver_bonus, operational_cost, truck_cost, payments', { count: 'exact' });
-
-    // Apply Filters
-    if (filters?.date) query = query.eq('date', filters.date);
-    if (filters?.customerName) query = query.ilike('customer_name', `%${filters.customerName}%`);
-
-    // Apply Pagination
-    const from = (page - 1) * pageSize;
-    const to = from + pageSize - 1;
-    
-    const { data, error, count } = await query
-        .order('date', { ascending: false })
-        .range(from, to);
-
-    if (error) { 
-        console.error('Error fetching sales (paginated):', error.message || JSON.stringify(error)); 
-        return { data: [], count: 0 }; 
-    }
-    
-    return { 
-        data: data ? data.map(mapSaleFromDB) : [], 
-        count: count || 0 
-    };
 };
 
 export const saveSale = async (sale: SaleRecord) => {
@@ -271,15 +222,10 @@ export const deleteSale = async (id: string) => {
 // --- GLOBAL CUSTOMER PAYMENTS ---
 
 export const getCustomerPayments = async (): Promise<CustomerPayment[]> => {
-    const { data, error } = await supabase
-        .from('avt_customer_payments')
-        .select('id, date, customer_id, customer_name, transfer_amount, cash_amount, unloading_cost, driver_bonus, other_cost, notes, total_paid')
-        .order('date', { ascending: false });
-    
-    if (error) { 
-        console.error('Error fetching payments:', error.message || JSON.stringify(error)); 
-        return []; 
-    }
+    const data = await fetchLargeData(
+        'avt_customer_payments',
+        'id, date, customer_id, customer_name, transfer_amount, cash_amount, unloading_cost, driver_bonus, other_cost, notes, total_paid'
+    );
     return data.map(mapCustomerPaymentFromDB);
 };
 
@@ -301,15 +247,10 @@ export const deleteCustomerPayment = async (id: string) => {
 // --- SUPPLIER PAYMENTS ---
 
 export const getSupplierPayments = async (): Promise<SupplierPayment[]> => {
-    const { data, error } = await supabase
-        .from('avt_supplier_payments')
-        .select('id, date, supplier_name, amount, method, notes')
-        .order('date', { ascending: false });
-    
-    if (error) { 
-        console.error('Error fetching supplier payments:', error.message || JSON.stringify(error)); 
-        return []; 
-    }
+    const data = await fetchLargeData(
+        'avt_supplier_payments',
+        'id, date, supplier_name, amount, method, notes'
+    );
     return data.map(mapSupplierPaymentFromDB);
 };
 
@@ -327,21 +268,16 @@ export const deleteSupplierPayment = async (id: string) => {
 // --- DRIVER TRANSACTIONS ---
 
 export const getDriverTransactions = async (): Promise<DriverTransaction[]> => {
-    const { data, error } = await supabase
-        .from('avt_driver_transactions')
-        .select('id, driver_name, date, amount, type, notes')
-        .order('date', { ascending: false });
-
-    if (error) { 
-        console.error('Error fetching driver tx:', error.message || JSON.stringify(error)); 
-        return []; 
-    }
+    const data = await fetchLargeData(
+        'avt_driver_transactions',
+        'id, driver_name, date, amount, type, notes'
+    );
     return data.map(mapDriverTxFromDB);
 };
 
 export const saveDriverTransaction = async (tx: DriverTransaction) => {
     const dbData = mapDriverTxToDB(tx);
-    const { error } = await supabase.from('avt_driver_transactions').upsert(dbData);
+    const { error } = await supabase.from('avt_driver_transactions').insert(dbData);
     if (error) throw error;
 };
 
@@ -352,7 +288,7 @@ export const saveDriverTransaction = async (tx: DriverTransaction) => {
 export const getCustomers = async (): Promise<Customer[]> => {
     const { data, error } = await supabase.from('avt_customers').select('id, name, address, phone').order('name');
     if (error) { 
-        console.error('Error fetching customers:', error.message || JSON.stringify(error)); 
+        console.error('Error fetching customers:', error.message); 
         return []; 
     }
     return data as Customer[];
@@ -372,7 +308,7 @@ export const deleteCustomer = async (id: string) => {
 export const getSuppliers = async (): Promise<Supplier[]> => {
     const { data, error } = await supabase.from('avt_suppliers').select('id, name').order('name');
     if (error) { 
-        console.error('Error fetching suppliers:', error.message || JSON.stringify(error)); 
+        console.error('Error fetching suppliers:', error.message); 
         return []; 
     }
     return data as Supplier[];
@@ -392,7 +328,7 @@ export const deleteSupplier = async (id: string) => {
 export const getCoops = async (): Promise<Coop[]> => {
     const { data, error } = await supabase.from('avt_coops').select('id, name, location').order('name');
     if (error) { 
-        console.error('Error fetching coops:', error.message || JSON.stringify(error)); 
+        console.error('Error fetching coops:', error.message); 
         return []; 
     }
     return data as Coop[];
@@ -412,7 +348,7 @@ export const deleteCoop = async (id: string) => {
 export const getDriversList = async (): Promise<MasterItem[]> => {
     const { data, error } = await supabase.from('avt_drivers_list').select('id, value').order('value');
     if (error) { 
-        console.error('Error fetching drivers list:', error.message || JSON.stringify(error)); 
+        console.error('Error fetching drivers list:', error.message); 
         return []; 
     }
     return data as MasterItem[];
@@ -432,7 +368,7 @@ export const deleteDriverFromList = async (id: string) => {
 export const getPlatesList = async (): Promise<MasterItem[]> => {
     const { data, error } = await supabase.from('avt_plates_list').select('id, value').order('value');
     if (error) { 
-        console.error('Error fetching plates list:', error.message || JSON.stringify(error)); 
+        console.error('Error fetching plates list:', error.message); 
         return []; 
     }
     return data as MasterItem[];

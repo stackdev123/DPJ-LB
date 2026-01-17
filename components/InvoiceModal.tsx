@@ -4,7 +4,6 @@ import { LedgerRow } from '../types';
 import { X, Printer, ImageDown } from 'lucide-react';
 import { formatDate, formatCurrency, downloadAsImage } from '../utils';
 import { getSales } from '../services/storageService';
-import Logo from './Logo';
 
 interface InvoiceModalProps {
   data: LedgerRow | null; // Single invoice
@@ -58,7 +57,7 @@ const InvoiceTemplate: React.FC<{ data: LedgerRow }> = ({ data }) => {
                 <div className="text-right text-xs leading-relaxed">
                     <div className="font-bold text-red-600 text-lg mb-2 flex justify-end items-center gap-3">
                         {/* LOGO */}
-                        <Logo className="h-10 w-10 text-red-600" />
+                        <img src="logo.png" alt="Logo" className="h-10 w-auto object-contain" />
                         <span>CV. DPJ Berkah Unggas</span>
                     </div>
                     <p>Kp. Pangkalan No. 436, Desa Pangkalan, Kec.</p>

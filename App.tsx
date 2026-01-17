@@ -25,9 +25,7 @@ import Login from './components/Login';
 import ComplaintModal from './components/ComplaintModal';
 import AboutModal from './components/AboutModal';
 import OnlineUserList from './components/OnlineUserList';
-import TvDashboard from './components/TvDashboard';
-import Logo from './components/Logo';
-import { LayoutDashboard, ShoppingCart, Truck, Menu, ChevronLeft, Wallet, TrendingUp, Database, User as UserIcon, RefreshCw, List, FileText, PieChart, LogOut, Package, X, Info, History, Radio, MonitorPlay } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Truck, Menu, ChevronLeft, Wallet, TrendingUp, Database, User as UserIcon, RefreshCw, List, FileText, PieChart, LogOut, Package, X, Info, History, Radio } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { formatDate, formatCurrency, generateDiff } from './utils';
 
@@ -36,12 +34,9 @@ const App: React.FC = () => {
   
   const [currentView, setCurrentView] = useState<AppView>(() => {
     const savedView = localStorage.getItem('avt_current_view');
-    if (savedView === 'TV_MODE') return AppView.OVERVIEW; // TV Mode handled separately now
+    if (savedView === 'TV_MODE') return AppView.OVERVIEW;
     return (savedView as AppView) || AppView.OVERVIEW;
   });
-  
-  // State for TV Dashboard overlay
-  const [isTvMode, setIsTvMode] = useState(false);
 
   const [purchases, setPurchases] = useState<PurchaseRecord[]>([]);
   const [sales, setSales] = useState<SaleRecord[]>([]);
@@ -80,10 +75,10 @@ const App: React.FC = () => {
   const changedTablesRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (currentView && !isTvMode) {
+    if (currentView) {
         localStorage.setItem('avt_current_view', currentView);
     }
-  }, [currentView, isTvMode]);
+  }, [currentView]);
 
   const refreshData = async (isAutoSync = false, tablesToRefresh: string[] = []) => {
     if (isAutoSync) {
@@ -236,7 +231,6 @@ const App: React.FC = () => {
     localStorage.removeItem('avt_user_session');
     localStorage.removeItem('avt_current_view');
     setCurrentView(AppView.OVERVIEW);
-    setIsTvMode(false);
   };
 
   const handleSavePurchases = async (records: PurchaseRecord[]) => {
@@ -488,19 +482,6 @@ const App: React.FC = () => {
     return <Login onLogin={handleLogin} />;
   }
 
-  // TV MODE OVERLAY
-  if (isTvMode) {
-      return (
-          <TvDashboard 
-            purchases={purchases}
-            sales={sales}
-            customerPayments={customerPayments}
-            supplierPayments={supplierPayments}
-            onExit={() => setIsTvMode(false)}
-          />
-      );
-  }
-
   return (
     <div className="min-h-screen bg-slate-100 font-sans text-slate-900 flex relative overflow-hidden">
       {isMobile && isSidebarOpen && (
@@ -522,7 +503,11 @@ const App: React.FC = () => {
             <div className={`flex items-center gap-3 ${!isSidebarOpen && !isMobile && 'justify-center w-full'}`}>
                 <div className="relative group">
                     <div className="absolute inset-0 bg-red-600 blur-lg opacity-30 group-hover:opacity-60 transition-opacity duration-500 rounded-full"></div>
-                    <Logo className="w-9 h-9 text-white relative z-10 drop-shadow-md" />
+                    <img 
+                        src="logo.png" 
+                        alt="Logo CV DPJ" 
+                        className="w-9 h-9 object-contain shrink-0 relative z-10 drop-shadow-md" 
+                    />
                 </div>
                 {(isSidebarOpen || isMobile) && (
                     <div className="flex flex-col">
@@ -679,15 +664,6 @@ const App: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-3 self-start md:self-auto">
-                <button 
-                    onClick={() => setIsTvMode(true)}
-                    className="flex items-center gap-2 bg-slate-800 text-white px-3 py-1.5 rounded-full shadow-md border border-slate-700 hover:bg-slate-700 transition-colors cursor-pointer"
-                    title="Open TV Dashboard"
-                >
-                    <MonitorPlay className="w-3.5 h-3.5" />
-                    <span className="text-xs font-bold hidden md:inline">TV Mode</span>
-                </button>
-
                 <button 
                     onClick={() => setShowOnlineUsers(true)}
                     className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
