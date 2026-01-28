@@ -58,12 +58,12 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <img 
                     src="logo.png" 
                     alt="Logo CV DPJ" 
-                    className="w-29 h-29 mx-auto object-contain relative z-10 drop-shadow-xl transform transition-transform group-hover:scale-105 duration-500" 
+                    className="w-28 h-28 mx-auto object-contain relative z-10 drop-shadow-xl transform transition-transform group-hover:scale-105 duration-500" 
                 />
             </div>
             
             <h1 className="text-2xl font-extrabold text-slate-800 mt-4 tracking-tight">
-              LIVE BIRD SYSTEM
+              CV. DPJ Berkah Unggas
             </h1>
           </div>
 

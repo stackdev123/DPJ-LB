@@ -233,7 +233,7 @@ const ComplaintModal: React.FC<ComplaintModalProps> = ({ purchase, sale, onClose
                                      <img 
                                         src="img35.jpg" 
                                         alt="Tanda Tangan Panji" 
-                                        className="h-18 w-auto object-contain scale-100"
+                                        className="h-full w-auto object-contain scale-125"
                                         style={{ mixBlendMode: 'multiply' }} 
                                      />
                                 </div>

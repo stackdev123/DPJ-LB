@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './services/supabaseClient';
 import { AppView, PurchaseRecord, SaleRecord, LedgerRow, LedgerRow as LedgerRowType, Payment, CustomerPayment, User, SupplierPayment, OnlineUser } from './types';
@@ -703,7 +702,7 @@ const App: React.FC = () => {
 
       <InvoiceModal data={invoiceData} bulkData={bulkInvoiceData} onClose={handleCloseInvoice} />
       {selectedSaleForPayment && <PaymentModal sale={selectedSaleForPayment} onClose={() => setSelectedSaleForPayment(null)} onAddPayment={handleAddPayment} />}
-      {selectedSaleForEdit && <EditSaleModal sale={selectedSaleForEdit} onClose={() => setSelectedSaleForEdit(null)} onSave={handleUpdateSale} />}
+      {selectedSaleForEdit && <EditSaleModal sale={selectedSaleForEdit} purchases={purchases} onClose={() => setSelectedSaleForEdit(null)} onSave={handleUpdateSale} />}
       {selectedPurchaseForEdit && <EditPurchaseModal purchase={selectedPurchaseForEdit} onClose={() => setSelectedPurchaseForEdit(null)} onSave={handleUpdatePurchase} />}
       
       {complaintContext && (

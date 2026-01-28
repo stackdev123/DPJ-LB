@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { PurchaseRecord, SaleRecord, Customer } from '../types';
 import { v4 as uuidv4 } from 'uuid';
@@ -110,6 +109,14 @@ const DistributionForm: React.FC<DistributionFormProps> = ({ purchases, existing
         }
     }
   }, [selectedPurchaseId]); 
+
+  // Auto-calculate Mortality Kg based on average weight
+  useEffect(() => {
+    if (selectedPurchase && formData.mortalityHeads > 0) {
+        const calculatedKg = formData.mortalityHeads * selectedPurchase.avgWeight;
+        setFormData(prev => ({ ...prev, mortalityKg: parseFloat(calculatedKg.toFixed(2)) }));
+    }
+  }, [formData.mortalityHeads, selectedPurchase?.avgWeight]);
 
   useEffect(() => {
     const mortVal = formData.mortalityKg * formData.sellPrice;
