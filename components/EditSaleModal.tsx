@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { SaleRecord, Customer } from '../types';
+import { SaleRecord, Customer, PurchaseRecord } from '../types';
 import { X, Save } from 'lucide-react';
 import SearchableSelect from './SearchableSelect';
 import * as Storage from '../services/storageService';
@@ -8,11 +7,12 @@ import { v4 as uuidv4 } from 'uuid';
 
 interface EditSaleModalProps {
   sale: SaleRecord | null;
+  purchases: PurchaseRecord[];
   onClose: () => void;
   onSave: (updatedSale: SaleRecord) => void;
 }
 
-const EditSaleModal: React.FC<EditSaleModalProps> = ({ sale, onClose, onSave }) => {
+const EditSaleModal: React.FC<EditSaleModalProps> = ({ sale, purchases, onClose, onSave }) => {
   const [formData, setFormData] = useState<Partial<SaleRecord>>(sale || {});
   const [customers, setCustomers] = useState<Customer[]>([]);
 
@@ -23,6 +23,17 @@ const EditSaleModal: React.FC<EditSaleModalProps> = ({ sale, onClose, onSave }) 
       }
       loadCustomers();
   }, []);
+
+  // Auto-calculate Mortality Kg based on average weight from parent purchase
+  useEffect(() => {
+    if (sale && formData.mortalityHeads !== undefined && formData.mortalityHeads > 0) {
+        const parentPurchase = purchases.find(p => p.id === sale.purchaseId);
+        if (parentPurchase) {
+            const calculatedKg = formData.mortalityHeads * parentPurchase.avgWeight;
+            setFormData(prev => ({ ...prev, mortalityKg: parseFloat(calculatedKg.toFixed(2)) }));
+        }
+    }
+  }, [formData.mortalityHeads, sale, purchases]);
 
   if (!sale) return null;
 
