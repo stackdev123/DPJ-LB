@@ -62,9 +62,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 />
             </div>
             
-            <h1 className="text-2xl font-extrabold text-slate-800 mt-4 tracking-tight">
-              CV. DPJ Berkah Unggas
-            </h1>
+           
           </div>
 
           <div className="p-8 pt-6">
