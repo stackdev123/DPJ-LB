@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { PurchaseRecord, SaleRecord } from '../types';
 import { Printer, TrendingUp, Download, Edit, ImageDown, AlertCircle, Filter, X, CheckCircle2, PlusCircle, ChevronDown, ChevronUp, DollarSign, Scale, Truck, Users, MousePointerClick, Calculator, HelpCircle, ArrowRight, ChevronLeft, ChevronRight, List, PieChart } from 'lucide-react';
@@ -433,7 +432,11 @@ const RecapTable: React.FC<RecapTableProps> = ({ purchases, sales, onEditPurchas
                                                                     {formatCurrency((sale.soldKg - sale.mortalityKg) * sale.sellPrice)}
                                                                 </td>
                                                                 <td className="p-2 text-center">
-                                                                    {onEditSale && <button onClick={() => onEditSale(sale.id)} className="text-blue-500 hover:text-blue-700 hover:underline">Edit</button>}
+                                                                    <div className="flex items-center justify-center gap-2">
+                                                                        {onEditSale && <button onClick={(e) => { e.stopPropagation(); onEditSale(sale.id); }} className="text-blue-500 hover:text-blue-700 hover:underline">Edit Jual</button>}
+                                                                        <span className="text-slate-300">|</span>
+                                                                        {onEditPurchase && <button onClick={(e) => { e.stopPropagation(); onEditPurchase(row.purchase.id); }} className="text-indigo-600 hover:text-indigo-800 hover:underline font-semibold">Edit Beli</button>}
+                                                                    </div>
                                                                 </td>
                                                             </tr>
                                                         ))}

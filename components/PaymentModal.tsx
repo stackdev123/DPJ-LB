@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { SaleRecord, Payment } from '../types';
 import { X, Save, Plus, Trash2 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../utils';
+import CurrencyInput from './CurrencyInput';
 
 interface PaymentModalProps {
   sale: SaleRecord | null;
@@ -11,7 +12,7 @@ interface PaymentModalProps {
 }
 
 const PaymentModal: React.FC<PaymentModalProps> = ({ sale, onClose, onAddPayment, onDeletePayment }) => {
-  const [amount, setAmount] = useState<number | ''>('');
+  const [amount, setAmount] = useState<number>(0);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [method, setMethod] = useState<'CASH' | 'TRANSFER'>('TRANSFER');
 
@@ -27,7 +28,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ sale, onClose, onAddPayment
     e.preventDefault();
     if (amount && amount > 0) {
         onAddPayment(sale.id, Number(amount), date, method);
-        setAmount(''); // Reset form
+        setAmount(0); // Reset form
     }
   };
 
@@ -99,16 +100,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ sale, onClose, onAddPayment
                             </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-slate-600 mb-1">Jumlah (Rp)</label>
-                            <input 
-                                type="number" 
-                                required
-                                min="1"
-                                // Removed max={remaining} to allow overpayment/deposit
+                            <CurrencyInput 
+                                label="Jumlah (Rp)"
+                                labelClassName="block text-xs font-medium text-slate-600 mb-1"
                                 value={amount}
-                                onChange={(e) => setAmount(parseFloat(e.target.value))}
+                                onChange={(val) => setAmount(val)}
                                 className="w-full border-slate-300 rounded-md text-sm p-2 border"
-                                placeholder="Input amount..."
+                                placeholder="0"
+                                required
                             />
                             {remaining < 0 && (
                                 <p className="text-xs text-green-600 mt-1 italic">

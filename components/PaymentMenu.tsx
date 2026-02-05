@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { SaleRecord, PurchaseRecord, Customer, CustomerPayment, User } from '../types';
 import { formatCurrency, formatDate, generateDiff } from '../utils';
@@ -6,6 +5,7 @@ import { History, CreditCard, Save, Edit, Search, ArrowLeft, ChevronRight, Walle
 import * as Storage from '../services/storageService';
 import { v4 as uuidv4 } from 'uuid';
 import SearchableSelect from './SearchableSelect';
+import CurrencyInput from './CurrencyInput';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import { logActivity } from '../services/logService';
 
@@ -72,6 +72,10 @@ const PaymentMenu: React.FC<PaymentMenuProps> = ({ sales, purchases, customerPay
             ? value 
             : parseFloat(value) || 0
       }));
+  };
+
+  const handleNumericChange = (name: string, value: number) => {
+    setInputData(prev => ({ ...prev, [name]: value }));
   };
 
   const resetForm = () => {
@@ -381,12 +385,24 @@ const PaymentMenu: React.FC<PaymentMenuProps> = ({ sales, purchases, customerPay
                         
                         <div className="bg-slate-50 p-3 rounded border border-slate-200 space-y-3">
                             <div>
-                                <label className="block text-xs font-bold text-blue-700 mb-1">Via Transfer (Rp)</label>
-                                <input type="number" name="transferAmount" value={inputData.transferAmount || ''} onChange={handleInputChange} className="w-full border-blue-200 focus:ring-blue-500 rounded p-2 text-sm font-bold" placeholder="0" />
+                                <CurrencyInput 
+                                    label="Via Transfer (Rp)"
+                                    labelClassName="block text-xs font-bold text-blue-700 mb-1"
+                                    value={inputData.transferAmount}
+                                    onChange={(val) => handleNumericChange('transferAmount', val)}
+                                    className="w-full border-blue-200 focus:ring-blue-500 rounded p-2 text-sm font-bold"
+                                    placeholder="0"
+                                />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-green-700 mb-1">Via Cash (Rp)</label>
-                                <input type="number" name="cashAmount" value={inputData.cashAmount || ''} onChange={handleInputChange} className="w-full border-green-200 focus:ring-green-500 rounded p-2 text-sm font-bold" placeholder="0" />
+                                <CurrencyInput 
+                                    label="Via Cash (Rp)"
+                                    labelClassName="block text-xs font-bold text-green-700 mb-1"
+                                    value={inputData.cashAmount}
+                                    onChange={(val) => handleNumericChange('cashAmount', val)}
+                                    className="w-full border-green-200 focus:ring-green-500 rounded p-2 text-sm font-bold"
+                                    placeholder="0"
+                                />
                             </div>
                         </div>
 
@@ -394,16 +410,34 @@ const PaymentMenu: React.FC<PaymentMenuProps> = ({ sales, purchases, customerPay
                             <h3 className="text-xs font-bold text-orange-800 uppercase border-b border-orange-200 pb-1 mb-2">Potongan / Biaya</h3>
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
-                                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Bongkaran</label>
-                                    <input type="number" name="unloadingCost" value={inputData.unloadingCost || ''} onChange={handleInputChange} className="w-full border-slate-300 rounded p-2 text-sm" placeholder="0" />
+                                    <CurrencyInput 
+                                        label="Bongkaran"
+                                        labelClassName="block text-[10px] font-bold text-slate-600 mb-1"
+                                        value={inputData.unloadingCost}
+                                        onChange={(val) => handleNumericChange('unloadingCost', val)}
+                                        className="w-full border-slate-300 rounded p-2 text-sm"
+                                        placeholder="0"
+                                    />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold text-slate-600 mb-1">Bon Sopir</label>
-                                    <input type="number" name="driverBonus" value={inputData.driverBonus || ''} onChange={handleInputChange} className="w-full border-slate-300 rounded p-2 text-sm" placeholder="0" />
+                                    <CurrencyInput 
+                                        label="Bon Sopir"
+                                        labelClassName="block text-[10px] font-bold text-slate-600 mb-1"
+                                        value={inputData.driverBonus}
+                                        onChange={(val) => handleNumericChange('driverBonus', val)}
+                                        className="w-full border-slate-300 rounded p-2 text-sm"
+                                        placeholder="0"
+                                    />
                                 </div>
                                 <div className="col-span-2">
-                                    <label className="block text-sm font-bold text-slate-600 mb-1">Biaya Lainnya</label>
-                                    <input type="number" name="otherCost" value={inputData.otherCost || ''} onChange={handleInputChange} className="w-full border-slate-300 rounded p-2 text-sm" placeholder="0" />
+                                    <CurrencyInput 
+                                        label="Biaya Lainnya"
+                                        labelClassName="block text-sm font-bold text-slate-600 mb-1"
+                                        value={inputData.otherCost}
+                                        onChange={(val) => handleNumericChange('otherCost', val)}
+                                        className="w-full border-slate-300 rounded p-2 text-sm"
+                                        placeholder="0"
+                                    />
                                 </div>
                             </div>
                         </div>

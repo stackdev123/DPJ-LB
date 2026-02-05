@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { PurchaseRecord, Supplier, Coop } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { Save, Plus, Trash2, Loader2, Info } from 'lucide-react';
 import SearchableSelect from './SearchableSelect';
+import CurrencyInput from './CurrencyInput';
 import * as Storage from '../services/storageService';
 
 interface PurchaseFormProps {
@@ -253,14 +253,12 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSave, onCancel }) => {
                         </div>
                     </div>
                     <div className="md:col-span-3">
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Harga Beli / Kg</label>
-                        <input 
-                            type="number" 
-                            min="0"
-                            value={row.buyPrice || ''} 
-                            onChange={(e) => updateRow(row.tempId, 'buyPrice', parseFloat(e.target.value))} 
-                            className="w-full rounded-md border-slate-300 p-2 border text-sm font-mono" 
-                            placeholder="0 (Boleh Kosong)"
+                        <CurrencyInput 
+                            label="Harga Beli / Kg"
+                            value={row.buyPrice}
+                            onChange={(val) => updateRow(row.tempId, 'buyPrice', val)}
+                            className="w-full rounded-md border-slate-300 p-2 border text-sm font-mono"
+                            placeholder="0"
                         />
                     </div>
                     <div className="md:col-span-3">

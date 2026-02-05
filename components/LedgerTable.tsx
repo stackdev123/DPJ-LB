@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { LedgerRow, CustomerPayment } from '../types';
 import { Printer, Filter, FileText, Files, Wallet, BookOpen, ChevronRight, ArrowLeft, Users, Edit, ImageDown } from 'lucide-react';
@@ -26,7 +25,6 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState('ALL');
-  const [viewMode, setViewMode] = useState<'SUMMARY' | 'DETAIL'>('SUMMARY');
 
   const uniqueCustomers = useMemo(() => {
     const map = new Map();
@@ -89,7 +87,14 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
   const totalMortalityVal = filteredData.reduce((acc, row) => acc + row.mortalityValue, 0);
 
   const handlePrintRecap = () => window.print();
-  const handleDownloadImage = () => downloadAsImage('ledger-content', `Ledger_Recap_${selectedCustomer}`);
+  
+  // Menggunakan ID baru 'ledger-capture-area' agar hasil download selalu tabel (PC view)
+  const handleDownloadImage = () => {
+    // Memberikan sedikit waktu render ulang jika diperlukan sebelum capture
+    setTimeout(() => {
+      downloadAsImage('ledger-capture-area', `Ledger_Recap_${selectedCustomer}`);
+    }, 100);
+  };
 
   const clearFilters = () => {
       setStartDate('');
@@ -97,8 +102,104 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
       setSelectedCustomer('ALL');
   };
 
+  // Helper untuk merender komponen ringkasan (digunakan dua kali: di UI dan di area capture)
+  const SummaryCards = () => (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+        <div className="bg-slate-50 p-2 rounded border-l-4 border-blue-500">
+            <div className="text-slate-400 text-[9px] uppercase font-bold">Sales Periode</div>
+            <div className="text-lg font-bold text-slate-800">{formatCurrency(totalSales)}</div>
+        </div>
+        <div className="bg-slate-50 p-2 rounded border-l-4 border-red-500">
+            <div className="text-slate-400 text-[9px] uppercase font-bold">Total Sisa Piutang</div>
+            <div className={`text-lg font-bold ${totalReceivable < 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {totalReceivable < 0 ? `+${formatCurrency(Math.abs(totalReceivable))}` : formatCurrency(totalReceivable)}
+            </div>
+        </div>
+        <div className="bg-slate-50 p-2 rounded border-l-4 border-orange-500">
+            <div className="text-slate-400 text-[9px] uppercase font-bold">Nilai Kematian</div>
+            <div className="text-lg font-bold text-orange-600">{formatCurrency(totalMortalityVal)}</div>
+        </div>
+    </div>
+  );
+
+  // Helper untuk merender tabel desktop (digunakan dua kali)
+  const DesktopTable = ({ isForCapture = false }) => (
+    <div className={`rounded border border-slate-200 ${!isForCapture ? 'hidden md:block overflow-x-auto' : 'overflow-visible'}`}>
+        <table className="w-full text-[11px] text-left whitespace-nowrap bg-white">
+            <thead className={`bg-slate-100 text-slate-600 font-bold uppercase text-[10px] ${!isForCapture ? 'sticky top-0 z-10 shadow-sm' : ''}`}>
+                <tr>
+                    <th className="py-2 px-2 border-b min-w-[200px]">Customer Name</th>
+                    <th className="py-2 px-2 text-right border-b">Sales (Periode)</th>
+                    <th className="py-2 px-2 text-right border-b bg-slate-50">Total Tagihan</th>
+                    <th className="py-2 px-2 text-right border-b bg-green-50 text-green-800">Total Bayar</th>
+                    <th className="py-2 px-2 text-right border-b bg-red-50 text-red-800">Sisa / Balance</th>
+                    {!isForCapture && <th className="py-2 px-2 text-center border-b print:hidden w-20">Action</th>}
+                </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+                {customerSummary.map((row) => (
+                    <tr key={row.id || row.customer} className="hover:bg-blue-50 transition-colors">
+                        <td className="py-1 px-2 font-bold text-blue-800">
+                            {row.customer}
+                            <span className="text-[9px] font-normal text-slate-400 ml-2">({row.transactionCount})</span>
+                        </td>
+                        <td className="py-1 px-2 text-right text-slate-500 font-mono">{formatCurrency(row.periodSales)}</td>
+                        <td className="py-1 px-2 text-right font-semibold font-mono bg-slate-50/50">{formatCurrency(row.remainingBalance + row.totalPaid)}</td>
+                        <td className="py-1 px-2 text-right font-semibold text-green-700 font-mono bg-green-50/30">{formatCurrency(row.totalPaid)}</td>
+                        <td className={`py-1 px-2 text-right font-bold font-mono text-xs bg-red-50/20 ${row.remainingBalance < 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {row.remainingBalance < 0 ? `+${formatCurrency(Math.abs(row.remainingBalance))}` : formatCurrency(row.remainingBalance)}
+                        </td>
+                        {!isForCapture && (
+                            <td className="py-1 px-2 text-center print:hidden">
+                                <button 
+                                    onClick={() => {
+                                        const custObj = uniqueCustomers.find(c => c.id === row.id || c.name === row.customer);
+                                        if(custObj) onShowCustomerStatement(custObj.name, custObj.id, startDate, endDate);
+                                    }}
+                                    className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-slate-300 rounded text-slate-600 hover:text-blue-600 hover:border-blue-300 text-[10px] font-bold shadow-sm"
+                                >
+                                    Kartu <ChevronRight className="w-3 h-3" />
+                                </button>
+                            </td>
+                        )}
+                    </tr>
+                ))}
+                {customerSummary.length === 0 && (
+                    <tr><td colSpan={isForCapture ? 5 : 6} className="p-6 text-center text-slate-400 italic">No data found.</td></tr>
+                )}
+            </tbody>
+        </table>
+    </div>
+  );
+
   return (
     <div className="space-y-4">
+      {/* AREA TERSEMBUNYI UNTUK CAPTURE (DOWNLOAD) - Selalu dalam format PC/Tabel */}
+      {/* w-[1280px] memastikan lebar cukup lebar untuk tabel penuh tanpa terpotong */}
+      <div 
+        id="ledger-capture-area" 
+        className="absolute -top-[99999px] -left-[99999px] w-[1200px] bg-white p-10 pointer-events-none z-[-1] overflow-visible"
+        aria-hidden="true"
+      >
+          <div className="mb-6 border-b-2 border-slate-800 pb-4">
+              <div className="flex justify-between items-end">
+                <div>
+                  <h1 className="text-3xl font-black uppercase text-slate-800 tracking-tight">Rekap Ledger Piutang</h1>
+                  <p className="text-base text-slate-500 font-bold">CV. DPJ Berkah Unggas</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-slate-700">Periode: {startDate || 'Awal'} s/d {endDate || 'Sekarang'}</p>
+                  <p className="text-xs text-slate-400">Dicetak pada: {new Date().toLocaleString('id-ID')}</p>
+                </div>
+              </div>
+          </div>
+          <SummaryCards />
+          <DesktopTable isForCapture={true} />
+          <div className="mt-10 pt-4 border-t border-slate-100 text-center text-[10px] text-slate-400">
+            System generated report - CV DPJ Berkah Unggas
+          </div>
+      </div>
+
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 print:hidden">
         <div>
             <h2 className="text-xl font-bold text-slate-800">Ledger Piutang</h2>
@@ -134,24 +235,9 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
       </div>
 
       <div id="ledger-content" className="bg-white p-2">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 print:gap-4 print:mb-6 mb-4">
-            <div className="bg-slate-50 p-2 rounded border-l-4 border-blue-500">
-                <div className="text-slate-400 text-[9px] uppercase font-bold">Sales Periode</div>
-                <div className="text-lg font-bold text-slate-800">{formatCurrency(totalSales)}</div>
-            </div>
-            <div className="bg-slate-50 p-2 rounded border-l-4 border-red-500">
-                <div className="text-slate-400 text-[9px] uppercase font-bold">Total Sisa Piutang</div>
-                <div className={`text-lg font-bold ${totalReceivable < 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {totalReceivable < 0 ? `+${formatCurrency(Math.abs(totalReceivable))}` : formatCurrency(totalReceivable)}
-                </div>
-            </div>
-            <div className="bg-slate-50 p-2 rounded border-l-4 border-orange-500">
-                <div className="text-slate-400 text-[9px] uppercase font-bold">Nilai Kematian</div>
-                <div className="text-lg font-bold text-orange-600">{formatCurrency(totalMortalityVal)}</div>
-            </div>
-          </div>
+          <SummaryCards />
 
-          {/* Mobile View: Card Layout (No horizontal scroll) */}
+          {/* Mobile View: Card Layout (Tetap Tampil di Layar Mobile) */}
           <div className="md:hidden space-y-3">
             {customerSummary.map((row) => (
                 <div key={row.id || row.customer} className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
@@ -165,7 +251,7 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
                                 const custObj = uniqueCustomers.find(c => c.id === row.id || c.name === row.customer);
                                 if(custObj) onShowCustomerStatement(custObj.name, custObj.id, startDate, endDate);
                             }}
-                            className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-slate-200 rounded text-slate-600 hover:text-blue-600 text-[10px] font-bold shadow-sm"
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-slate-300 rounded text-slate-600 hover:text-blue-600 text-[10px] font-bold shadow-sm"
                         >
                             Kartu <ChevronRight className="w-3 h-3" />
                         </button>
@@ -201,51 +287,8 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
             )}
           </div>
 
-          {/* Desktop View: Compact Table Layout */}
-          <div className="hidden md:block rounded border border-slate-200 overflow-x-auto">
-                <table className="w-full text-[11px] text-left whitespace-nowrap">
-                    <thead className="bg-slate-100 text-slate-600 font-bold uppercase text-[10px] sticky top-0 z-10 shadow-sm">
-                        <tr>
-                            <th className="py-2 px-2 border-b min-w-[150px]">Customer Name</th>
-                            <th className="py-2 px-2 text-right border-b">Sales (Periode)</th>
-                            <th className="py-2 px-2 text-right border-b bg-slate-50">Total Tagihan</th>
-                            <th className="py-2 px-2 text-right border-b bg-green-50 text-green-800">Total Bayar</th>
-                            <th className="py-2 px-2 text-right border-b bg-red-50 text-red-800">Sisa / Balance</th>
-                            <th className="py-2 px-2 text-center border-b print:hidden w-20">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                        {customerSummary.map((row) => (
-                            <tr key={row.id || row.customer} className="hover:bg-blue-50 transition-colors">
-                                <td className="py-1 px-2 font-bold text-blue-800">
-                                    {row.customer}
-                                    <span className="text-[9px] font-normal text-slate-400 ml-2">({row.transactionCount})</span>
-                                </td>
-                                <td className="py-1 px-2 text-right text-slate-500 font-mono">{formatCurrency(row.periodSales)}</td>
-                                <td className="py-1 px-2 text-right font-semibold font-mono bg-slate-50/50">{formatCurrency(row.remainingBalance + row.totalPaid)}</td>
-                                <td className="py-1 px-2 text-right font-semibold text-green-700 font-mono bg-green-50/30">{formatCurrency(row.totalPaid)}</td>
-                                <td className={`py-1 px-2 text-right font-bold font-mono text-xs bg-red-50/20 ${row.remainingBalance < 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    {row.remainingBalance < 0 ? `+${formatCurrency(Math.abs(row.remainingBalance))}` : formatCurrency(row.remainingBalance)}
-                                </td>
-                                <td className="py-1 px-2 text-center print:hidden">
-                                    <button 
-                                        onClick={() => {
-                                            const custObj = uniqueCustomers.find(c => c.id === row.id || c.name === row.customer);
-                                            if(custObj) onShowCustomerStatement(custObj.name, custObj.id, startDate, endDate);
-                                        }}
-                                        className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-slate-300 rounded text-slate-600 hover:text-blue-600 hover:border-blue-300 text-[10px] font-bold shadow-sm"
-                                    >
-                                        Kartu <ChevronRight className="w-3 h-3" />
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                        {customerSummary.length === 0 && (
-                            <tr><td colSpan={6} className="p-6 text-center text-slate-400 italic">No data found.</td></tr>
-                        )}
-                    </tbody>
-                </table>
-          </div>
+          {/* Desktop View: Compact Table Layout (Tetap Tampil di Layar PC) */}
+          <DesktopTable />
       </div>
     </div>
   );

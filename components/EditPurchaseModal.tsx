@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { PurchaseRecord } from '../types';
 import { X, Save } from 'lucide-react';
 import SearchableSelect from './SearchableSelect';
+import CurrencyInput from './CurrencyInput';
 import * as Storage from '../services/storageService';
 
 interface EditPurchaseModalProps {
@@ -45,6 +45,10 @@ const EditPurchaseModal: React.FC<EditPurchaseModalProps> = ({ purchase, onClose
       ...prev,
       [name]: name === 'date' ? value : (parseFloat(value) || 0)
     }));
+  };
+
+  const handleNumericChange = (name: keyof PurchaseRecord, value: number) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSelectChange = (name: keyof PurchaseRecord, value: string) => {
@@ -145,8 +149,13 @@ const EditPurchaseModal: React.FC<EditPurchaseModalProps> = ({ purchase, onClose
                     <input type="number" name="kg" step="0.01" value={formData.kg} onChange={handleChange} className="w-full border-slate-300 rounded p-2" />
                 </div>
                 <div className="col-span-2">
-                    <label className="block text-sm font-bold text-slate-800">Harga Beli / Kg</label>
-                    <input type="number" name="buyPrice" value={formData.buyPrice} onChange={handleChange} className="w-full border-slate-300 rounded p-3 text-lg font-bold" />
+                    <CurrencyInput 
+                        label="Harga Beli / Kg"
+                        value={formData.buyPrice || 0}
+                        onChange={(val) => handleNumericChange('buyPrice', val)}
+                        className="w-full border-slate-300 rounded p-3 text-lg font-bold"
+                        placeholder="0"
+                    />
                 </div>
             </div>
 

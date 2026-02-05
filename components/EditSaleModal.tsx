@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { SaleRecord, Customer, PurchaseRecord } from '../types';
 import { X, Save } from 'lucide-react';
 import SearchableSelect from './SearchableSelect';
+import CurrencyInput from './CurrencyInput';
 import * as Storage from '../services/storageService';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -45,6 +46,10 @@ const EditSaleModal: React.FC<EditSaleModalProps> = ({ sale, purchases, onClose,
         ? value 
         : parseFloat(value) || 0
     }));
+  };
+
+  const handleNumericChange = (name: keyof SaleRecord, value: number) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleCustomerChange = (val: string) => {
@@ -108,14 +113,12 @@ const EditSaleModal: React.FC<EditSaleModalProps> = ({ sale, purchases, onClose,
                     <input type="number" name="soldKg" step="0.01" value={formData.soldKg} onChange={handleChange} className="w-full border-slate-300 rounded p-2" />
                 </div>
                 <div className="col-span-2">
-                    <label className="block text-sm font-medium text-slate-700">Harga Jual / Kg</label>
-                    <input 
-                        type="number" 
-                        name="sellPrice" 
-                        value={formData.sellPrice} 
-                        onChange={handleChange} 
-                        className="w-full border-slate-300 rounded p-2 font-bold text-slate-900" 
-                        placeholder="0 (Boleh Kosong)"
+                    <CurrencyInput 
+                        label="Harga Jual / Kg"
+                        value={formData.sellPrice || 0}
+                        onChange={(val) => handleNumericChange('sellPrice', val)}
+                        className="w-full border-slate-300 rounded p-2 font-bold text-slate-900"
+                        placeholder="0"
                     />
                     <p className="text-[10px] text-slate-500 italic mt-1">*Jika harga 0, tagihan akan nol.</p>
                 </div>
@@ -134,20 +137,44 @@ const EditSaleModal: React.FC<EditSaleModalProps> = ({ sale, purchases, onClose,
 
             <div className="grid grid-cols-2 gap-4 border-t pt-4 bg-slate-50 p-3 rounded">
                 <div>
-                    <label className="block text-xs font-bold text-slate-600">Biaya Bongkar</label>
-                    <input type="number" name="unloadingCost" value={formData.unloadingCost} onChange={handleChange} className="w-full border-slate-300 rounded p-2" />
+                    <CurrencyInput 
+                        label="Biaya Bongkar"
+                        labelClassName="block text-xs font-bold text-slate-600"
+                        value={formData.unloadingCost || 0}
+                        onChange={(val) => handleNumericChange('unloadingCost', val)}
+                        className="w-full border-slate-300 rounded p-2"
+                        placeholder="0"
+                    />
                 </div>
                 <div>
-                    <label className="block text-xs font-bold text-slate-600">Bon Sopir</label>
-                    <input type="number" name="driverBonus" value={formData.driverBonus} onChange={handleChange} className="w-full border-slate-300 rounded p-2" />
+                    <CurrencyInput 
+                        label="Bon Sopir"
+                        labelClassName="block text-xs font-bold text-slate-600"
+                        value={formData.driverBonus || 0}
+                        onChange={(val) => handleNumericChange('driverBonus', val)}
+                        className="w-full border-slate-300 rounded p-2"
+                        placeholder="0"
+                    />
                 </div>
                 <div>
-                    <label className="block text-xs font-bold text-slate-600">Ops Lainnya</label>
-                    <input type="number" name="operationalCost" value={formData.operationalCost} onChange={handleChange} className="w-full border-slate-300 rounded p-2" />
+                    <CurrencyInput 
+                        label="Ops Lainnya"
+                        labelClassName="block text-xs font-bold text-slate-600"
+                        value={formData.operationalCost || 0}
+                        onChange={(val) => handleNumericChange('operationalCost', val)}
+                        className="w-full border-slate-300 rounded p-2"
+                        placeholder="0"
+                    />
                 </div>
                 <div>
-                    <label className="block text-xs font-bold text-slate-600">Sewa Truk</label>
-                    <input type="number" name="truckCost" value={formData.truckCost} onChange={handleChange} className="w-full border-slate-300 rounded p-2" />
+                    <CurrencyInput 
+                        label="Sewa Truk"
+                        labelClassName="block text-xs font-bold text-slate-600"
+                        value={formData.truckCost || 0}
+                        onChange={(val) => handleNumericChange('truckCost', val)}
+                        className="w-full border-slate-300 rounded p-2"
+                        placeholder="0"
+                    />
                 </div>
             </div>
 

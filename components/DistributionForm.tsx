@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Truck, Users, AlertCircle, Calendar, MapPin, TrendingUp, TrendingDown } from 'lucide-react';
 import { formatDate, formatCurrency } from '../utils';
 import SearchableSelect from './SearchableSelect';
+import CurrencyInput from './CurrencyInput';
 import * as Storage from '../services/storageService';
 
 interface DistributionFormProps {
@@ -153,6 +154,10 @@ const DistributionForm: React.FC<DistributionFormProps> = ({ purchases, existing
         ? value 
         : parseFloat(value) || 0
     }));
+  };
+
+  const handleNumericChange = (name: string, value: number) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleCustomerSelect = (val: string) => {
@@ -339,15 +344,12 @@ const DistributionForm: React.FC<DistributionFormProps> = ({ purchases, existing
                             </div>
                         </div>
                         <div className="mt-4">
-                            <label className="block text-sm font-bold text-slate-800 mb-1">Harga Jual / Kg</label>
-                            <input 
-                                type="number" 
-                                name="sellPrice" 
-                                // Required attribute removed to allow 0/empty
-                                value={formData.sellPrice || ''} 
-                                onChange={handleChange} 
+                            <CurrencyInput 
+                                label="Harga Jual / Kg"
+                                value={formData.sellPrice}
+                                onChange={(val) => handleNumericChange('sellPrice', val)}
                                 className="block w-full rounded-lg border-slate-400 p-3 border text-lg font-bold text-slate-900 shadow-sm focus:ring-2 focus:ring-secondary"
-                                placeholder="0 (Boleh Kosong/Menyusul)"
+                                placeholder="0"
                             />
                             <p className="text-[10px] text-slate-500 mt-1 italic">* Harga bisa dikosongkan (0) jika nota harga menyusul.</p>
                         </div>
@@ -375,21 +377,45 @@ const DistributionForm: React.FC<DistributionFormProps> = ({ purchases, existing
                                 Biaya Tambahan
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-600 mb-1">Biaya Bongkar</label>
-                                <input type="number" name="unloadingCost" value={formData.unloadingCost || ''} onChange={handleChange} className="block w-full rounded-md border-slate-300 p-2 border text-sm" />
+                                <CurrencyInput 
+                                    label="Biaya Bongkar"
+                                    labelClassName="block text-xs font-bold text-slate-600 mb-1"
+                                    value={formData.unloadingCost}
+                                    onChange={(val) => handleNumericChange('unloadingCost', val)}
+                                    className="block w-full rounded-md border-slate-300 p-2 border text-sm"
+                                    placeholder="0"
+                                />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-600 mb-1">Bon Sopir</label>
-                                <input type="number" name="driverBonus" value={formData.driverBonus || ''} onChange={handleChange} className="block w-full rounded-md border-slate-300 p-2 border text-sm" />
+                                <CurrencyInput 
+                                    label="Bon Sopir"
+                                    labelClassName="block text-xs font-bold text-slate-600 mb-1"
+                                    value={formData.driverBonus}
+                                    onChange={(val) => handleNumericChange('driverBonus', val)}
+                                    className="block w-full rounded-md border-slate-300 p-2 border text-sm"
+                                    placeholder="0"
+                                />
                                 <span className="text-[10px] text-slate-400 leading-none">*Dipinjam Driver</span>
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-600 mb-1">Biaya Operasional</label>
-                                <input type="number" name="operationalCost" value={formData.operationalCost || ''} onChange={handleChange} className="block w-full rounded-md border-slate-300 p-2 border text-sm" placeholder="0" />
+                                <CurrencyInput 
+                                    label="Biaya Operasional"
+                                    labelClassName="block text-xs font-bold text-slate-600 mb-1"
+                                    value={formData.operationalCost}
+                                    onChange={(val) => handleNumericChange('operationalCost', val)}
+                                    className="block w-full rounded-md border-slate-300 p-2 border text-sm"
+                                    placeholder="0"
+                                />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-600 mb-1">Sewa Truk</label>
-                                <input type="number" name="truckCost" value={formData.truckCost || ''} onChange={handleChange} className="block w-full rounded-md border-slate-300 p-2 border text-sm" placeholder="0" />
+                                <CurrencyInput 
+                                    label="Sewa Truk"
+                                    labelClassName="block text-xs font-bold text-slate-600 mb-1"
+                                    value={formData.truckCost}
+                                    onChange={(val) => handleNumericChange('truckCost', val)}
+                                    className="block w-full rounded-md border-slate-300 p-2 border text-sm"
+                                    placeholder="0"
+                                />
                             </div>
                          </div>
                     </div>
@@ -409,12 +435,18 @@ const DistributionForm: React.FC<DistributionFormProps> = ({ purchases, existing
 
                     <div className="grid grid-cols-2 gap-6 relative z-10">
                         <div>
-                             <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Pembayaran Awal (DP/Lunas)</label>
-                             <input type="number" name="initialPayment" value={formData.initialPayment || ''} onChange={handleChange} className="block w-full rounded bg-slate-800 border-slate-600 text-white p-2 font-bold" placeholder="0" />
+                             <CurrencyInput 
+                                label="Pembayaran Awal (DP/Lunas)"
+                                labelClassName="block text-xs font-bold text-slate-400 uppercase mb-1"
+                                value={formData.initialPayment}
+                                onChange={(val) => handleNumericChange('initialPayment', val)}
+                                className="block w-full rounded bg-slate-800 border-slate-600 text-white p-2 font-bold"
+                                placeholder="0"
+                             />
                         </div>
                          <div>
                              <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Metode Pembayaran</label>
-                             <select name="paymentMethod" value={formData.paymentMethod} onChange={handleChange} className="block w-full rounded bg-slate-800 border-slate-600 text-white p-2 text-sm">
+                             <select name="paymentMethod" value={formData.paymentMethod} onChange={handleChange} className="block w-full h-[38px] rounded bg-slate-800 border-slate-600 text-white px-2 text-sm">
                                  <option value="TRANSFER">TRANSFER</option>
                                  <option value="CASH">CASH</option>
                              </select>
