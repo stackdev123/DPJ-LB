@@ -54,7 +54,7 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
             <div className="flex flex-col py-0.5">
                 <span className="font-semibold text-slate-800">{soldStr}</span>
                 {s.mortalityKg > 0 && (
-                    <div className="flex flex-wrap gap-x-2 text-[9px] leading-tight text-slate-500 mt-0.5">
+                    <div className="flex flex-wrap gap-x-2 text-[10px] leading-tight text-slate-500 mt-0.5">
                         <span className="text-red-600 font-medium">Mati: {s.mortalityKg.toLocaleString('id-ID')} Kg ({formatCurrency(mortVal)})</span>
                     </div>
                 )}
@@ -208,25 +208,25 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-4 text-xs">
                     <div className="p-2 bg-slate-50 rounded border border-slate-200">
-                        <div className="text-[10px] text-slate-500 uppercase font-bold">Saldo Awal</div>
+                        <div className="text-[12px] text-slate-500 uppercase font-bold">Saldo Awal</div>
                         <div className={`font-bold ${openingBalance > 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurrency(openingBalance)}</div>
                     </div>
                     <div className="p-2 bg-white rounded border border-slate-200">
-                        <div className="text-[10px] text-slate-500 uppercase font-bold">Penjualan (Debit)</div>
+                        <div className="text-[12px] text-slate-500 uppercase font-bold">Penjualan (Debit)</div>
                         <div className="font-bold text-slate-800">{formatCurrency(totalDebit)}</div>
                     </div>
                     <div className="p-2 bg-white rounded border border-slate-200">
-                        <div className="text-[10px] text-slate-500 uppercase font-bold">Pembayaran + Bon (Credit)</div>
+                        <div className="text-[12px] text-slate-500 uppercase font-bold">Pembayaran + Bon (Credit)</div>
                         <div className="font-bold text-green-700">{formatCurrency(totalCredit + totalDriverBonus)}</div>
                     </div>
                     <div className="p-2 bg-indigo-50 rounded border border-indigo-200">
-                        <div className="text-[10px] text-indigo-800 uppercase font-bold">Sisa Piutang Akhir</div>
+                        <div className="text-[12px] text-indigo-800 uppercase font-bold">Sisa Piutang Akhir</div>
                         <div className={`text-base font-bold ${closingBalance > 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurrency(closingBalance)}</div>
                     </div>
                 </div>
 
                 <div className="overflow-x-auto rounded-lg border border-slate-200 print:border-black">
-                    <table className="w-full text-[10px] md:text-xs text-left">
+                    <table className="w-full text-xs md:text-xs text-left">
                         <thead className="bg-slate-100 text-slate-600 font-bold uppercase print:bg-slate-200 print:text-black">
                             <tr>
                                 <th className="p-1 md:p-2 border-b text-center whitespace-nowrap w-20">Tanggal</th>
@@ -252,14 +252,30 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                             
                             {rows.map((row, idx) => (
                                 <tr key={idx} className="hover:bg-slate-50 border-b border-slate-100">
-                                    <td className="p-1 md:p-2 whitespace-nowrap text-center text-[10px] md:text-xs">{formatDate(row.date)}</td>
-                                    <td className="p-1 md:p-2 min-w-[120px]">{row.description}</td>
-                                    <td className="p-1 md:p-2 text-right font-mono text-slate-600 whitespace-nowrap">{row.price ? formatCurrency(row.price) : '-'}</td>
-                                    <td className="p-1 md:p-2 text-right font-mono text-slate-700 whitespace-nowrap">{row.debit > 0 ? formatCurrency(row.debit) : '-'}</td>
-                                    <td className="p-1 md:p-2 text-right font-mono text-blue-700 font-bold whitespace-nowrap">{row.bonSopir > 0 ? formatCurrency(row.bonSopir) : '-'}</td>
-                                    <td className="p-1 md:p-2 text-right font-mono text-green-700 font-semibold whitespace-nowrap">{row.credit > 0 ? formatCurrency(row.credit) : '-'}</td>
-                                    <td className="p-1 md:p-2 text-center text-slate-500">{row.paymentDate}</td>
-                                    <td className={`p-1 md:p-2 text-right font-mono font-bold bg-slate-50/50 whitespace-nowrap ${row.balance > 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurrency(row.balance)}</td>
+                                    <td className="p-1 md:p-2 whitespace-nowrap text-center text-xs md:text-sm font-medium">
+    {formatDate(row.date)}
+</td>
+<td className="p-1 md:p-2 min-w-[120px] text-xs md:text-sm">
+    {row.description}
+</td>
+<td className="p-1 md:p-2 text-right font-mono text-slate-600 whitespace-nowrap text-xs md:text-sm">
+    {row.price ? formatCurrency(row.price) : '-'}
+</td>
+<td className="p-1 md:p-2 text-right font-mono text-slate-700 whitespace-nowrap text-xs md:text-sm">
+    {row.debit > 0 ? formatCurrency(row.debit) : '-'}
+</td>
+<td className="p-1 md:p-2 text-right font-mono text-blue-700 font-bold whitespace-nowrap text-xs md:text-sm">
+    {row.bonSopir > 0 ? formatCurrency(row.bonSopir) : '-'}
+</td>
+<td className="p-1 md:p-2 text-right font-mono text-green-700 font-semibold whitespace-nowrap text-xs md:text-sm">
+    {row.credit > 0 ? formatCurrency(row.credit) : '-'}
+</td>
+<td className="p-1 md:p-2 text-center text-slate-500 text-[10px] md:text-xs">
+    {row.paymentDate}
+</td>
+<td className={`p-1 md:p-2 text-right font-mono font-bold bg-slate-50/50 whitespace-nowrap text-sm md:text-base ${row.balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+    {formatCurrency(row.balance)}
+</td>
                                 </tr>
                             ))}
                             {rows.length === 0 && (
