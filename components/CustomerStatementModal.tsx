@@ -286,11 +286,11 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                             <tr>
                                 <td colSpan={2} className="p-1 md:p-2 text-right uppercase text-[10px] text-slate-500 whitespace-nowrap">Total Periode</td>
                                 <td></td>
-                                <td className="p-1 md:p-2 text-right font-mono whitespace-nowrap">{formatCurrency(totalDebit)}</td>
-                                <td className="p-1 md:p-2 text-right font-mono text-blue-700 whitespace-nowrap">{formatCurrency(totalDriverBonus)}</td>
-                                <td className="p-1 md:p-2 text-right font-mono text-green-700 whitespace-nowrap">{formatCurrency(totalCredit)}</td>
+                                <td className="p-1 md:p-2 text-[15px] text-right font-mono whitespace-nowrap">{formatCurrency(totalDebit)}</td>
+                                <td className="p-1 md:p-2 text-[15px] text-right font-mono text-blue-700 whitespace-nowrap">{formatCurrency(totalDriverBonus)}</td>
+                                <td className="p-1 md:p-2 text-[15px] text-right font-mono text-green-700 whitespace-nowrap">{formatCurrency(totalCredit)}</td>
                                 <td></td>
-                                <td className={`p-1 md:p-2 text-right font-mono whitespace-nowrap ${closingBalance > 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurrency(closingBalance)}</td>
+                                <td className={`p-1 md:p-2 text-[16px] text-right font-mono whitespace-nowrap ${closingBalance > 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurrency(closingBalance)}</td>
                             </tr>
                         </tfoot>
                     </table>
