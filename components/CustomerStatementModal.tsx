@@ -231,12 +231,12 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                             <tr>
                                 <th className="p-1 md:p-2 border-b text-center whitespace-nowrap w-20">Tanggal</th>
                                 <th className="p-1 md:p-2 border-b whitespace-nowrap min-w-[120px]">Keterangan</th>
-                                <th className="p-1 md:p-2 border-b text-right whitespace-nowrap">Harga</th>
-                                <th className="p-1 md:p-2 border-b text-right whitespace-nowrap">Tagihan</th>
-                                <th className="p-1 md:p-2 border-b text-right whitespace-nowrap text-blue-700">Bon Sopir</th>
-                                <th className="p-1 md:p-2 border-b text-right whitespace-nowrap">Bayar</th>
+                                <th className="p-1 md:p-2 border-b text-center whitespace-nowrap">Harga</th>
+                                <th className="p-1 md:p-2 border-b text-center whitespace-nowrap">Tagihan</th>
+                                <th className="p-1 md:p-2 border-b text-center whitespace-nowrap text-blue-700">Bon Sopir</th>
+                                <th className="p-1 md:p-2 border-b text-center whitespace-nowrap">Bayar</th>
                                 <th className="p-1 md:p-2 border-b text-center whitespace-nowrap w-20">Tgl Bayar</th>
-                                <th className="p-1 md:p-2 border-b text-right bg-slate-200 print:bg-slate-300 whitespace-nowrap font-bold">Saldo</th>
+                                <th className="p-1 md:p-2 border-b text-center bg-slate-200 print:bg-slate-300 whitespace-nowrap font-bold">Saldo</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -258,16 +258,16 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
 <td className="p-1 md:p-2 min-w-[120px] text-xs md:text-sm">
     {row.description}
 </td>
-<td className="p-1 md:p-2 text-right font-mono text-slate-600 whitespace-nowrap text-xs md:text-sm">
+<td className="p-1 md:p-2 text-center font-mono text-slate-600 whitespace-nowrap text-xs md:text-sm">
     {row.price ? formatCurrency(row.price) : '-'}
 </td>
-<td className="p-1 md:p-2 text-right font-mono text-slate-700 whitespace-nowrap text-xs md:text-sm">
+<td className="p-1 md:p-2 text-center font-mono text-slate-700 whitespace-nowrap text-xs md:text-sm">
     {row.debit > 0 ? formatCurrency(row.debit) : '-'}
 </td>
-<td className="p-1 md:p-2 text-right font-mono text-blue-700 font-bold whitespace-nowrap text-xs md:text-sm">
+<td className="p-1 md:p-2 text-center font-mono text-blue-700 font-bold whitespace-nowrap text-xs md:text-sm">
     {row.bonSopir > 0 ? formatCurrency(row.bonSopir) : '-'}
 </td>
-<td className="p-1 md:p-2 text-right font-mono text-green-700 font-semibold whitespace-nowrap text-xs md:text-sm">
+<td className="p-1 md:p-2 text-center font-mono text-green-700 font-semibold whitespace-nowrap text-xs md:text-sm">
     {row.credit > 0 ? formatCurrency(row.credit) : '-'}
 </td>
 <td className="p-1 md:p-2 text-center text-slate-500 text-[10px] md:text-xs">
