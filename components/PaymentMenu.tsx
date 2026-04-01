@@ -152,19 +152,12 @@ const PaymentMenu: React.FC<PaymentMenuProps> = ({ sales, purchases, customerPay
       }
 
       // Logic to ensure ID exists. If user changed name to a new one, ID might be empty.
-      const selectedC = customers.find(c => c.name === inputData.customerName);
-      let finalCustomerId = selectedC?.id || inputData.customerId;
-
-      // If no ID found (user typed new name), generate one and save to master customers to be safe
-      if (!finalCustomerId) {
-          finalCustomerId = uuidv4();
-          await Storage.saveCustomer({
-              id: finalCustomerId,
-              name: inputData.customerName,
-              address: '-'
-          });
-          await logActivity(user, 'CREATE', 'CUSTOMER', `Auto-created customer ${inputData.customerName}`, finalCustomerId);
+      const selectedC = customers.find(c => c.name.toLowerCase() === inputData.customerName.toLowerCase());
+      if (!selectedC) {
+          alert("Nama Customer tidak ditemukan. Silakan pilih dari daftar yang ada.");
+          return;
       }
+      let finalCustomerId = selectedC.id;
 
       // Format Note with Actual Payment Date
       const paymentDateStr = formatDate(inputData.actualPaymentDate);
@@ -380,6 +373,7 @@ const PaymentMenu: React.FC<PaymentMenuProps> = ({ sales, purchases, customerPay
                                 options={customers.map(c => c.name)}
                                 placeholder="Pilih Customer..."
                                 required
+                                allowNew={false}
                              />
                         </div>
                         

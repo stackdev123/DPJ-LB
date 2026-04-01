@@ -8,6 +8,7 @@ interface SearchableSelectProps {
   options: string[];
   placeholder?: string;
   required?: boolean;
+  allowNew?: boolean;
 }
 
 const SearchableSelect: React.FC<SearchableSelectProps> = ({ 
@@ -16,7 +17,8 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
   onChange, 
   options, 
   placeholder,
-  required 
+  required,
+  allowNew = true
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -33,11 +35,21 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
     function handleClickOutside(event: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        if (!allowNew) {
+          const match = options.find(opt => opt.toLowerCase() === search.toLowerCase());
+          if (!match && search !== '') {
+            setSearch('');
+            onChange('');
+          } else if (match && match !== search) {
+            setSearch(match);
+            onChange(match);
+          }
+        }
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [wrapperRef]);
+  }, [wrapperRef, allowNew, options, search, onChange]);
 
   const filteredOptions = options.filter(opt => 
     opt.toLowerCase().includes(search.toLowerCase())
@@ -91,7 +103,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
             ))
           ) : (
              <div className="px-4 py-2 text-sm text-slate-500 italic">
-               "{search}" (New Entry)
+               {allowNew ? `"${search}" (New Entry)` : "Data tidak ditemukan"}
              </div>
           )}
         </div>

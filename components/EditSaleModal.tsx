@@ -70,7 +70,12 @@ const EditSaleModal: React.FC<EditSaleModalProps> = ({ sale, purchases, onClose,
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({ ...sale, ...formData } as SaleRecord);
+    const existingCustomer = customers.find(c => c.name.toLowerCase() === formData.customerName?.toLowerCase());
+    if (!existingCustomer) {
+        alert("Nama Customer tidak ditemukan. Silakan pilih dari daftar yang ada.");
+        return;
+    }
+    onSave({ ...sale, ...formData, customerId: existingCustomer.id } as SaleRecord);
     onClose();
   };
 
@@ -99,6 +104,7 @@ const EditSaleModal: React.FC<EditSaleModalProps> = ({ sale, purchases, onClose,
                         onChange={handleCustomerChange}
                         options={customers.map(c => c.name)}
                         placeholder="Cari Customer..."
+                        allowNew={false}
                     />
                 </div>
             </div>

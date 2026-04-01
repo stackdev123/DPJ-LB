@@ -72,6 +72,8 @@ const DistributionForm: React.FC<DistributionFormProps> = ({ purchases, existing
   const remainingHeads = selectedPurchase ? selectedPurchase.heads - totalSoldHeads : 0;
   const remainingKg = selectedPurchase ? selectedPurchase.kg - totalSoldKg : 0;
 
+  const [showUnsoldOnly, setShowUnsoldOnly] = useState(false);
+
   const [derived, setDerived] = useState({
     mortalityValue: 0,
     invoiceTotal: 0,
@@ -176,15 +178,11 @@ const DistributionForm: React.FC<DistributionFormProps> = ({ purchases, existing
 
     // Auto-save New Customer if not exists
     const existing = customers.find(c => c.name.toLowerCase() === formData.customerName.toLowerCase());
-    let customerId = existing?.id;
     if (!existing) {
-        customerId = uuidv4();
-        await Storage.saveCustomer({
-            id: customerId,
-            name: formData.customerName,
-            address: formData.customerAddress || '-'
-        });
+        alert("Nama Customer tidak ditemukan. Silakan pilih dari daftar yang ada.");
+        return;
     }
+    let customerId = existing.id;
 
     const newSale: SaleRecord = {
       id: uuidv4(),
@@ -218,6 +216,11 @@ const DistributionForm: React.FC<DistributionFormProps> = ({ purchases, existing
      const pIdNormalized = String(p.id).trim().toLowerCase();
      const pSales = existingSales.filter(s => s.purchaseId && String(s.purchaseId).trim().toLowerCase() === pIdNormalized);
      const sold = pSales.reduce((acc, curr) => acc + curr.soldKg, 0);
+     
+     if (showUnsoldOnly && sold > 0 && p.id !== selectedPurchaseId) {
+         return false;
+     }
+     
      // Show if not fully sold OR if it's the currently selected one (to prevent disappearing)
      return sold < p.kg || p.id === selectedPurchaseId;
   });
@@ -245,6 +248,18 @@ const DistributionForm: React.FC<DistributionFormProps> = ({ purchases, existing
                         onChange={(e) => setPurchaseDateFilter(e.target.value)}
                         className="block w-full rounded-md border-slate-300 shadow-sm focus:border-primary focus:ring focus:ring-primary p-2 border"
                     />
+                    <div className="mt-2 flex items-center gap-2">
+                        <input 
+                            type="checkbox" 
+                            id="unsoldOnly" 
+                            checked={showUnsoldOnly} 
+                            onChange={(e) => setShowUnsoldOnly(e.target.checked)} 
+                            className="rounded border-slate-300 text-primary focus:ring-primary w-4 h-4"
+                        />
+                        <label htmlFor="unsoldOnly" className="text-xs text-slate-600 font-medium cursor-pointer select-none">
+                            Hanya tampilkan stok yang belum terjual sama sekali
+                        </label>
+                    </div>
                 </div>
                 
                 <div>
@@ -311,6 +326,7 @@ const DistributionForm: React.FC<DistributionFormProps> = ({ purchases, existing
                                     options={customers.map(c => c.name)}
                                     placeholder="Ketik Nama Customer..."
                                     required
+                                    allowNew={false}
                                 />
                             </div>
                             <div className="flex-[1.5]">
