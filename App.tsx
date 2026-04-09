@@ -213,7 +213,7 @@ const App: React.FC = () => {
             console.log("Auto-refresh cycle (15s)...");
             refreshData(true);
         }
-    }, 30000); 
+    }, 45000); 
 
     return () => clearInterval(intervalId);
   }, [user, isLoading, isSyncing]);
