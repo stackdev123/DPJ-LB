@@ -1,23 +1,26 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { PurchaseRecord, User } from '../types';
-import { Edit, Trash2, Search, Plus, Truck, Warehouse, Filter, ChevronLeft, ChevronRight, X, Calendar } from 'lucide-react';
+import { PurchaseRecord, User, SaleRecord } from '../types';
+import { Edit, Trash2, Search, Plus, Truck, Warehouse, Filter, ChevronLeft, ChevronRight, X, Calendar, ShoppingCart } from 'lucide-react';
 import { formatDate, formatCurrency } from '../utils';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 interface PurchaseListProps {
   purchases: PurchaseRecord[];
+  sales: SaleRecord[];
   onEditPurchase: (id: string) => void;
   onNewPurchase: () => void;
+  onSellPurchase: (id: string) => void;
   onDeletePurchase: (id: string) => Promise<void>;
   user: User;
 }
 
-const PurchaseList: React.FC<PurchaseListProps> = ({ purchases, onEditPurchase, onNewPurchase, onDeletePurchase, user }) => {
+const PurchaseList: React.FC<PurchaseListProps> = ({ purchases, sales, onEditPurchase, onNewPurchase, onSellPurchase, onDeletePurchase, user }) => {
   // Filter States
   const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [showUnsoldOnly, setShowUnsoldOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
   // Pagination States
@@ -30,7 +33,7 @@ const PurchaseList: React.FC<PurchaseListProps> = ({ purchases, onEditPurchase, 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, startDate, endDate]);
+  }, [searchTerm, startDate, endDate, showUnsoldOnly]);
 
   const filteredPurchases = useMemo(() => {
     return purchases.filter(p => {
@@ -51,9 +54,18 @@ const PurchaseList: React.FC<PurchaseListProps> = ({ purchases, onEditPurchase, 
         if (end && pDate > end) dateMatch = false;
       }
 
-      return searchMatch && dateMatch;
+      // Unsold Logic
+      let unsoldMatch = true;
+      if (showUnsoldOnly) {
+          const pIdNormalized = String(p.id).trim().toLowerCase();
+          const pSales = sales.filter(s => s.purchaseId && String(s.purchaseId).trim().toLowerCase() === pIdNormalized);
+          const soldKg = pSales.reduce((acc, curr) => acc + curr.soldKg, 0);
+          if (soldKg > 0) unsoldMatch = false;
+      }
+
+      return searchMatch && dateMatch && unsoldMatch;
     });
-  }, [purchases, searchTerm, startDate, endDate]);
+  }, [purchases, sales, searchTerm, startDate, endDate, showUnsoldOnly]);
 
   // Pagination Logic
   const totalPages = Math.ceil(filteredPurchases.length / itemsPerPage);
@@ -70,6 +82,7 @@ const PurchaseList: React.FC<PurchaseListProps> = ({ purchases, onEditPurchase, 
       setSearchTerm('');
       setStartDate('');
       setEndDate('');
+      setShowUnsoldOnly(false);
   };
 
   return (
@@ -106,15 +119,15 @@ const PurchaseList: React.FC<PurchaseListProps> = ({ purchases, onEditPurchase, 
            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 animate-in slide-in-from-top-2">
                <div className="flex justify-between items-center mb-3">
                    <h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
-                       <Calendar className="w-3 h-3" /> Filter Tanggal
+                       <Calendar className="w-3 h-3" /> Filter Pencarian
                    </h3>
-                   {(startDate || endDate) && (
+                   {(startDate || endDate || showUnsoldOnly) && (
                        <button onClick={clearFilters} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 font-bold">
                            <X className="w-3 h-3" /> Reset Filter
                        </button>
                    )}
                </div>
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                    <div>
                        <label className="block text-xs text-slate-500 mb-1 font-semibold">Dari Tanggal</label>
                        <input 
@@ -132,6 +145,20 @@ const PurchaseList: React.FC<PurchaseListProps> = ({ purchases, onEditPurchase, 
                         onChange={e => setEndDate(e.target.value)} 
                         className="w-full text-sm border-slate-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none"
                        />
+                   </div>
+                   <div className="flex items-end">
+                        <div className="flex items-center gap-2 h-[38px] bg-white px-3 rounded border border-slate-300 w-full">
+                            <input 
+                                type="checkbox" 
+                                id="unsoldOnly" 
+                                checked={showUnsoldOnly} 
+                                onChange={(e) => setShowUnsoldOnly(e.target.checked)} 
+                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                            />
+                            <label htmlFor="unsoldOnly" className="text-xs text-slate-600 font-semibold cursor-pointer select-none">
+                                Belum Terjual
+                            </label>
+                        </div>
                    </div>
                    <div className="flex items-end">
                        <div className="text-xs text-slate-500 bg-white p-2 rounded border w-full text-center h-[38px] flex items-center justify-center">
@@ -200,6 +227,13 @@ const PurchaseList: React.FC<PurchaseListProps> = ({ purchases, onEditPurchase, 
 
                             <td className="p-2 text-center print:hidden">
                                 <div className="flex justify-center gap-1">
+                                    <button
+                                        onClick={() => onSellPurchase(p.id)}
+                                        className="p-1 text-green-600 hover:text-green-800 hover:bg-green-100 rounded"
+                                        title="Jual"
+                                    >
+                                        <ShoppingCart className="w-3.5 h-3.5" />
+                                    </button>
                                     <button
                                         onClick={() => onEditPurchase(p.id)}
                                         className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded"
