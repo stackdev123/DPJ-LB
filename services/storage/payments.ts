@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient';
+import { insertToSecondaryDb } from '../secondaryDBClient';
 import { CustomerPayment, SupplierPayment } from '../../types';
 import { fetchLargeData } from './core';
 
@@ -62,6 +63,9 @@ export const saveCustomerPayment = async (payment: CustomerPayment) => {
     const dbData = mapCustomerPaymentToDB(payment);
     const { error } = await supabase.from('avt_customer_payments').upsert(dbData);
     if (error) throw error;
+    
+    // Backup data to secondary write-only database
+    await insertToSecondaryDb('avt_customer_payments', dbData);
 };
 
 export const updateCustomerPayment = async (payment: CustomerPayment) => {
@@ -87,6 +91,9 @@ export const saveSupplierPayment = async (payment: SupplierPayment) => {
     const dbData = mapSupplierPaymentToDB(payment);
     const { error } = await supabase.from('avt_supplier_payments').upsert(dbData);
     if (error) throw error;
+    
+    // Backup data to secondary write-only database
+    await insertToSecondaryDb('avt_supplier_payments', dbData);
 };
 
 export const deleteSupplierPayment = async (id: string) => {

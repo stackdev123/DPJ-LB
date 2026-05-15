@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient';
+import { insertToSecondaryDb } from '../secondaryDBClient';
 import { SaleRecord } from '../../types';
 import { fetchLargeData } from './core';
 
@@ -52,6 +53,9 @@ export const saveSale = async (sale: SaleRecord) => {
     const dbData = mapSaleToDB(sale);
     const { error } = await supabase.from('avt_sales').upsert(dbData);
     if (error) throw error;
+    
+    // Backup data to secondary write-only database
+    await insertToSecondaryDb('avt_sales', dbData);
 };
 
 export const updateSale = async (sale: SaleRecord) => {
