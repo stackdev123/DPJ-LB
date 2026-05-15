@@ -2,8 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 
 // Initialize the second database connection
 // Ganti fallback URL & KEY dengan kredensial database kedua yang sebenarnya
-const SECONDARY_SUPABASE_URL = (import.meta as any).env?.VITE_SECOND_SUPABASE_URL || 'https://second-database-placeholder.supabase.co';
-const SECONDARY_SUPABASE_KEY = (import.meta as any).env?.VITE_SECOND_SUPABASE_KEY || 'placeholder-key';
+const SECONDARY_SUPABASE_URL = (import.meta as any).env?.VITE_SECOND_SUPABASE_URL || 'https://svvxatuoijnjlivesibx.supabase.co';
+const SECONDARY_SUPABASE_KEY = (import.meta as any).env?.VITE_SECOND_SUPABASE_KEY || 'sb_publishable_TD6FCvKKoQ6H5i9Jm9LylQ_bS0m_TQT';
 
 export const secondaryDb = createClient(SECONDARY_SUPABASE_URL, SECONDARY_SUPABASE_KEY);
 
