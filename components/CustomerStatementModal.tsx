@@ -1,7 +1,10 @@
 import React, { useMemo } from 'react';
 import { SaleRecord, CustomerPayment } from '../types';
-import { X, Printer, ImageDown } from 'lucide-react';
+import { X, Printer, ImageDown, FileText } from 'lucide-react';
 import { formatDate, formatCurrency, downloadAsImage } from '../utils';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 
 interface CustomerStatementModalProps {
   customerName: string;
@@ -52,7 +55,7 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
         
         let desc: React.ReactNode = (
             <div className="flex flex-col py-0.5">
-                <span className="font-semibold text-slate-800">{soldStr}</span>
+                <span className="font-bold text-slate-800">{soldStr}</span>
                 {s.mortalityKg > 0 && (
                     <div className="flex flex-wrap gap-x-2 text-[10px] leading-tight text-slate-500 mt-0.5">
                         <span className="text-red-600 font-medium">Mati: {s.mortalityKg.toLocaleString('id-ID')} Kg ({formatCurrency(mortVal)})</span>
@@ -94,7 +97,7 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
 
         let desc: React.ReactNode = (
             <div className="flex flex-col py-0.5">
-                <span className="font-medium text-slate-800">Bayar: {methodStr}</span>
+                <span className="font-bold text-slate-800">Bayar: {methodStr}</span>
             </div>
         );
 
@@ -152,13 +155,58 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
   }, [salesData, globalPayments, customerId, customerName, startDate, endDate]);
 
   const handlePrint = () => window.print();
-  const handleDownload = () => downloadAsImage('customer-statement-area', `Kartu_Piutang_${customerName}`);
+  const handleDownloadImage = () => downloadAsImage('customer-statement-area', `Kartu_Piutang_${customerName}`);
+
+  const handleDownloadPDF = async () => {
+    const headerEl = document.getElementById('pdf-header-area');
+    if (!headerEl) return;
+    
+    // Capture the header exactly as it appears on web
+    const canvas = await html2canvas(headerEl, { scale: 2 });
+    const headerImgData = canvas.toDataURL('image/png');
+    
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = doc.internal.pageSize.getWidth();
+    
+    const margin = 14;
+    const imgWidth = pdfWidth - 2 * margin;
+    const props = doc.getImageProperties(headerImgData);
+    const imgHeight = (imgWidth / props.width) * props.height;
+    
+    autoTable(doc, {
+        html: '#pdf-table',
+        useCss: true,
+        startY: margin + imgHeight + 4,
+        margin: { top: margin, left: margin, right: margin, bottom: margin },
+        didParseCell: function(data: any) {
+            if (data.cell.styles.fontSize) {
+                const strSize = String(data.cell.styles.fontSize);
+                const numSize = parseFloat(strSize.replace(/[^0-9.]/g, ''));
+                if (!isNaN(numSize)) {
+                    data.cell.styles.fontSize = Math.round(numSize * 0.6);
+                }
+            }
+            data.cell.styles.cellPadding = 2;
+        },
+        didDrawPage: function (data: any) {
+            // Draw header on the first page only
+            if (data.pageNumber === 1) {
+                doc.addImage(headerImgData, 'PNG', margin, margin, imgWidth, imgHeight);
+            }
+        }
+    });
+
+    doc.save(`Kartu_Piutang_${customerName.replace(/\s+/g, '_')}.pdf`);
+  };
 
   return (
     <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/70 backdrop-blur-sm print:bg-white print:p-0 print:static print:block">
         <div className="fixed top-4 right-4 flex gap-2 print:hidden z-[101]">
-            <button onClick={handleDownload} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded shadow-lg flex items-center gap-2 text-sm font-bold">
+            <button onClick={handleDownloadImage} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded shadow-lg flex items-center gap-2 text-sm font-bold">
                 <ImageDown className="w-4 h-4" /> Save JPG
+            </button>
+            <button onClick={handleDownloadPDF} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded shadow-lg flex items-center gap-2 text-sm font-bold">
+                <FileText className="w-4 h-4" /> Save PDF
             </button>
             <button onClick={handlePrint} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow-lg flex items-center gap-2 text-sm font-bold">
                 <Printer className="w-4 h-4" /> Print
@@ -170,6 +218,7 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
 
         <div className="flex min-h-full items-center justify-center p-2 md:p-4">
             <div id="customer-statement-area" className="bg-white w-full max-w-6xl p-4 md:p-8 shadow-2xl rounded-lg mx-auto my-4 relative print:shadow-none print:m-0 print:w-full print:max-w-none print:p-0">
+                 <div id="pdf-header-area">
                  <div className="mb-4 pb-4 border-b-2 border-slate-800">
                     <div className="flex justify-between items-start">
                         <div className="flex gap-4 items-center">
@@ -209,34 +258,35 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-4 text-xs">
                     <div className="p-2 bg-slate-50 rounded border border-slate-200">
                         <div className="text-[12px] text-slate-500 uppercase font-bold">Saldo Awal</div>
-                        <div className={`font-bold ${openingBalance > 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurrency(openingBalance)}</div>
+                        <div className={`font-bold text-[14px] ${openingBalance > 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurrency(openingBalance)}</div>
                     </div>
                     <div className="p-2 bg-white rounded border border-slate-200">
                         <div className="text-[12px] text-slate-500 uppercase font-bold">Penjualan (Debit)</div>
-                        <div className="font-bold text-slate-800">{formatCurrency(totalDebit)}</div>
+                        <div className="font-bold text-slate-800 text-[14px]">{formatCurrency(totalDebit)}</div>
                     </div>
                     <div className="p-2 bg-white rounded border border-slate-200">
                         <div className="text-[12px] text-slate-500 uppercase font-bold">Pembayaran + Bon (Credit)</div>
-                        <div className="font-bold text-green-700">{formatCurrency(totalCredit + totalDriverBonus)}</div>
+                        <div className="font-bold text-green-700 text-[14px]">{formatCurrency(totalCredit + totalDriverBonus)}</div>
                     </div>
                     <div className="p-2 bg-indigo-50 rounded border border-indigo-200">
                         <div className="text-[12px] text-indigo-800 uppercase font-bold">Sisa Piutang Akhir</div>
                         <div className={`text-base font-bold ${closingBalance > 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurrency(closingBalance)}</div>
                     </div>
                 </div>
+                </div>
 
                 <div className="overflow-x-auto rounded-lg border border-slate-200 print:border-black">
-                    <table className="w-full text-xs md:text-xs text-left">
+                    <table id="pdf-table" className="w-full text-xs md:text-xs text-left">
                         <thead className="bg-slate-100 text-slate-600 font-bold uppercase print:bg-slate-200 print:text-black">
                             <tr>
-                                <th className="p-1 md:p-2 border-b text-center whitespace-nowrap w-20">Tanggal</th>
-                                <th className="p-1 md:p-2 border-b whitespace-nowrap min-w-[120px]">Keterangan</th>
-                                <th className="p-1 md:p-2 border-b text-center whitespace-nowrap">Harga</th>
-                                <th className="p-1 md:p-2 border-b text-center whitespace-nowrap">Tagihan</th>
-                                <th className="p-1 md:p-2 border-b text-center whitespace-nowrap text-blue-700">Bon Sopir</th>
-                                <th className="p-1 md:p-2 border-b text-center whitespace-nowrap">Bayar</th>
-                                <th className="p-1 md:p-2 border-b text-center whitespace-nowrap w-20">Tgl Bayar</th>
-                                <th className="p-1 md:p-2 border-b text-center bg-slate-200 print:bg-slate-300 whitespace-nowrap font-bold">Saldo</th>
+                                <th className="p-1 md:p-2 border-b text-center whitespace-nowrap w-20 text-[13px]">Tanggal</th>
+                                <th className="p-1 md:p-2 border-b whitespace-nowrap min-w-[120px] text-[13px]">Keterangan</th>
+                                <th className="p-1 md:p-2 border-b text-center whitespace-nowrap text-[13px]">Harga</th>
+                                <th className="p-1 md:p-2 border-b text-center whitespace-nowrap text-[13px]">Tagihan</th>
+                                <th className="p-1 md:p-2 border-b text-center whitespace-nowrap text-blue-700 text-[13px]">Bon Sopir</th>
+                                <th className="p-1 md:p-2 border-b text-center whitespace-nowrap text-[13px]">Bayar</th>
+                                <th className="p-1 md:p-2 border-b text-center whitespace-nowrap w-20 text-[13px]">Tgl Bayar</th>
+                                <th className="p-1 md:p-2 border-b text-center bg-slate-200 print:bg-slate-300 whitespace-nowrap font-bold text-[13px]">Saldo</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -252,28 +302,28 @@ const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                             
                             {rows.map((row, idx) => (
                                 <tr key={idx} className="hover:bg-slate-50 border-b border-slate-100">
-                                    <td className="p-1 md:p-2 whitespace-nowrap text-center text-xs md:text-sm font-medium">
+                                    <td className="p-1 md:p-2 whitespace-nowrap text-center text-xs md:text-sm font-bold">
     {formatDate(row.date)}
 </td>
-<td className="p-1 md:p-2 min-w-[120px] text-xs md:text-sm">
+<td className="p-1 md:p-2 min-w-[120px] text-xs md:text-sm font-bold">
     {row.description}
 </td>
-<td className="p-1 md:p-2 text-center font-mono text-slate-600 whitespace-nowrap text-xs md:text-sm">
+<td className="p-1 md:p-2 text-center font-mono text-slate-600 whitespace-nowrap text-[15px] font-bold">
     {row.price ? formatCurrency(row.price) : '-'}
 </td>
-<td className="p-1 md:p-2 text-center font-mono text-slate-700 whitespace-nowrap text-xs md:text-sm">
+<td className="p-1 md:p-2 text-center font-mono text-slate-700 whitespace-nowrap text-[15px] font-bold">
     {row.debit > 0 ? formatCurrency(row.debit) : '-'}
 </td>
-<td className="p-1 md:p-2 text-center font-mono text-blue-700 font-bold whitespace-nowrap text-xs md:text-sm">
+<td className="p-1 md:p-2 text-center font-mono text-blue-700 font-bold whitespace-nowrap text-[15px]">
     {row.bonSopir > 0 ? formatCurrency(row.bonSopir) : '-'}
 </td>
-<td className="p-1 md:p-2 text-center font-mono text-green-700 font-semibold whitespace-nowrap text-xs md:text-sm">
+<td className="p-1 md:p-2 text-center font-mono text-green-700 font-bold whitespace-nowrap text-[15px]">
     {row.credit > 0 ? formatCurrency(row.credit) : '-'}
 </td>
-<td className="p-1 md:p-2 text-center text-slate-500 text-[10px] md:text-xs">
+<td className="p-1 md:p-2 text-center text-slate-500 text-[13px]">
     {row.paymentDate}
 </td>
-<td className={`p-1 md:p-2 text-right font-mono font-bold bg-slate-50/50 whitespace-nowrap text-sm md:text-base ${row.balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+<td className={`p-1 md:p-2 text-right font-mono font-bold bg-slate-50/50 whitespace-nowrap text-[17px] ${row.balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
     {formatCurrency(row.balance)}
 </td>
                                 </tr>

@@ -1,8 +1,11 @@
 
 import React, { useMemo, useState } from 'react';
 import { PurchaseRecord, SaleRecord, SupplierPayment, User } from '../types';
-import { X, Printer, ImageDown, Plus, Trash2 } from 'lucide-react';
+import { X, Printer, ImageDown, Plus, Trash2, FileText } from 'lucide-react';
 import { formatDate, formatCurrency, downloadAsImage } from '../utils';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 import * as Storage from '../services/storageService';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import { logActivity } from '../services/logService';
@@ -132,6 +135,48 @@ const SupplierStatementModal: React.FC<SupplierStatementModalProps> = ({
   const handlePrint = () => window.print();
   const handleDownload = () => downloadAsImage('supplier-statement-area', `Hutang_${supplierName}`);
 
+  const handleDownloadPDF = async () => {
+    const headerEl = document.getElementById('supplier-pdf-header');
+    if (!headerEl) return;
+    
+    // Capture the header exactly as it appears on web
+    const canvas = await html2canvas(headerEl, { scale: 2 });
+    const headerImgData = canvas.toDataURL('image/png');
+    
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = doc.internal.pageSize.getWidth();
+    
+    const margin = 14;
+    const imgWidth = pdfWidth - 2 * margin;
+    const props = doc.getImageProperties(headerImgData);
+    const imgHeight = (imgWidth / props.width) * props.height;
+    
+    autoTable(doc, {
+        html: '#supplier-pdf-table',
+        useCss: true,
+        startY: margin + imgHeight + 4,
+        margin: { top: margin, left: margin, right: margin, bottom: margin },
+        didParseCell: function(data: any) {
+            if (data.cell.styles.fontSize) {
+                const strSize = String(data.cell.styles.fontSize);
+                const numSize = parseFloat(strSize.replace(/[^0-9.]/g, ''));
+                if (!isNaN(numSize)) {
+                    data.cell.styles.fontSize = Math.round(numSize * 0.6);
+                }
+            }
+            data.cell.styles.cellPadding = 2;
+        },
+        didDrawPage: function (data: any) {
+            // Draw header on the first page only
+            if (data.pageNumber === 1) {
+                doc.addImage(headerImgData, 'PNG', margin, margin, imgWidth, imgHeight);
+            }
+        }
+    });
+
+    doc.save(`Kartu_Hutang_${supplierName.replace(/\s+/g, '_')}.pdf`);
+  };
+
   const initiateDelete = (id: string) => {
       setItemToDelete(id);
       setDeleteModalOpen(true);
@@ -169,6 +214,12 @@ const SupplierStatementModal: React.FC<SupplierStatementModalProps> = ({
           <ImageDown className="w-4 h-4" /> Save JPG
         </button>
         <button 
+          onClick={handleDownloadPDF}
+          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded shadow-lg flex items-center gap-2 text-sm font-bold"
+        >
+          <FileText className="w-4 h-4" /> Save PDF
+        </button>
+        <button 
           onClick={handlePrint}
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow-lg flex items-center gap-2 text-sm font-bold"
         >
@@ -187,6 +238,7 @@ const SupplierStatementModal: React.FC<SupplierStatementModalProps> = ({
             id="supplier-statement-area"
             className="bg-white w-full max-w-5xl p-6 md:p-10 shadow-2xl rounded-lg mx-auto my-8 relative print:shadow-none print:m-0 print:w-full print:max-w-none print:p-0"
         >
+            <div id="supplier-pdf-header">
              {/* Header Section */}
              <div className="mb-6 pb-6 border-b-2 border-slate-800">
                 <div className="flex justify-between items-start">
@@ -230,10 +282,11 @@ const SupplierStatementModal: React.FC<SupplierStatementModalProps> = ({
                     </div>
                 </div>
             </div>
+            </div>
 
             {/* Table */}
             <div className="overflow-x-auto rounded-lg border border-slate-200 print:border-black">
-                <table className="w-full text-sm text-left">
+                <table id="supplier-pdf-table" className="w-full text-sm text-left">
                     <thead className="bg-slate-100 text-slate-600 font-bold uppercase text-xs print:bg-slate-200 print:text-black">
                         <tr>
                             <th className="p-3 border-b text-center whitespace-nowrap">Tanggal</th>
