@@ -1,6 +1,7 @@
 
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import * as XLSX from 'xlsx';
 
 export const formatDate = (dateStr: string): string => {
   if (!dateStr) return '';
@@ -24,11 +25,11 @@ export const formatCurrency = (amount: number): string => {
 // Helper to generate a text description of changes between two objects
 export const generateDiff = (original: any, updated: any, fields: { key: string, label: string, isCurrency?: boolean }[]) => {
   const changes: string[] = [];
-  
+
   fields.forEach(f => {
     const oldVal = original[f.key];
     const newVal = updated[f.key];
-    
+
     // Use loose equality to catch 100 vs "100"
     if (oldVal != newVal) {
       let oldDisplay = oldVal;
@@ -88,11 +89,11 @@ export const downloadAsPDF = async (elementId: string, fileName: string) => {
 
     // Use JPEG with 0.60 quality to significantly reduce file size
     const imgData = canvas.toDataURL('image/jpeg', 0.60);
-    
+
     // A4 size: 210mm x 297mm
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
-    
+
     const imgProps = pdf.getImageProperties(imgData);
     const pdfImgHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
@@ -101,5 +102,17 @@ export const downloadAsPDF = async (elementId: string, fileName: string) => {
   } catch (err) {
     console.error("Error generating PDF:", err);
     alert("Gagal mengunduh PDF. Silakan coba lagi.");
+  }
+};
+
+export const downloadAsExcel = (data: any[], fileName: string) => {
+  try {
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
+    XLSX.writeFile(workbook, `${fileName}.xlsx`);
+  } catch (err) {
+    console.error("Error generating Excel:", err);
+    alert("Gagal mengunduh Excel. Silakan coba lagi.");
   }
 };
