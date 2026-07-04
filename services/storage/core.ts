@@ -4,7 +4,7 @@ import { supabase } from '../supabaseClient';
 
 export const fetchLargeData = async (table: string, columns: string, orderBy: string = 'date', limit: number = 5000) => {
     let allData: any[] = [];
-    
+
     // First, find the total count dynamically for efficiency
     const { count, error: countError } = await supabase
         .from(table)
@@ -16,22 +16,23 @@ export const fetchLargeData = async (table: string, columns: string, orderBy: st
         // If error fetching count, fallback to basic loop
         let from = 0;
         let step = 1000;
-        
+
         while (from < limit) {
             const to = from + step - 1;
             const { data, error } = await supabase
                 .from(table)
                 .select(columns)
                 .order(orderBy, { ascending: false })
+                .order('id', { ascending: true })
                 .range(from, to);
-                
+
             if (error) {
                 console.error(`Error fetching ${table}:`, error.message);
                 break;
             }
-            
+
             if (!data || data.length === 0) break;
-            
+
             allData = [...allData, ...data];
             if (data.length < step) break;
             from += step;
@@ -50,6 +51,7 @@ export const fetchLargeData = async (table: string, columns: string, orderBy: st
             .from(table)
             .select(columns)
             .order(orderBy, { ascending: false })
+            .order('id', { ascending: true })
             .range(from, to)
             .then(({ data, error }) => {
                 if (error) throw error;
