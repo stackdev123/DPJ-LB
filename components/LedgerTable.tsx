@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { LedgerRow, CustomerPayment } from '../types';
 import { Printer, Filter, FileText, Files, Wallet, BookOpen, ChevronRight, ArrowLeft, Users, Edit, ImageDown, Download } from 'lucide-react';
-import { formatDate, formatCurrency, downloadAsImage, downloadAsExcel } from '../utils';
+import { formatDate, formatCurrency, downloadAsImage, downloadAsExcel, downloadMultiSheetExcel } from '../utils';
 
 interface LedgerTableProps {
     data: LedgerRow[];
@@ -11,6 +11,7 @@ interface LedgerTableProps {
     onPrintBulkInvoices: (rows: LedgerRow[]) => void;
     onShowCustomerStatement: (customerName: string, customerId: string, startDate: string, endDate: string) => void;
     onEditSale: (saleId: string) => void;
+    isLoading?: boolean;
 }
 
 const LedgerTable: React.FC<LedgerTableProps> = ({
@@ -20,7 +21,8 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
     onPrintInvoice,
     onPrintBulkInvoices,
     onShowCustomerStatement,
-    onEditSale
+    onEditSale,
+    isLoading
 }) => {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
@@ -108,6 +110,201 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
         downloadAsExcel(dataForExcel, `Ledger_Piutang_${selectedCustomer}`);
     };
 
+    const handleDownloadDetailExcel = (customerId: string, customerName: string) => {
+        const isMatch = (item: { customerId?: string, customer?: string, customerName?: string }) => {
+            if (customerId && item.customerId) return item.customerId === customerId;
+            const itemName = item.customer || item.customerName;
+            return itemName === customerName;
+        };
+
+        // Filter berdasarkan rentang tanggal yang aktif
+        const filterByDate = (itemDate: string) => {
+            const d = new Date(itemDate);
+            const start = startDate ? new Date(startDate) : null;
+            const end = endDate ? new Date(endDate) : null;
+            if (start && d < start) return false;
+            if (end && d > end) return false;
+            return true;
+        };
+
+        const customerSales = data.filter(r => isMatch(r) && filterByDate(r.date));
+        const customerPaymentsList = payments.filter(p => isMatch(p) && filterByDate(p.date));
+
+        // Label periode untuk nama file & header
+        const periodLabel = startDate || endDate
+            ? `${startDate || 'Awal'}_sd_${endDate || 'Sekarang'}`
+            : 'Semua_Periode';
+
+        // 1. Prepare Kartu Piutang Data
+        const txs: Array<{
+            date: string;
+            type: 'SALE' | 'PAYMENT';
+            description: string;
+            price: number;
+            bonSopir: number;
+            debit: number;
+            credit: number;
+            paymentDate: string;
+        }> = [];
+
+        customerSales.forEach(s => {
+            const netKg = Math.max(0, (s.soldKg || 0) - (s.mortalityKg || 0));
+            const amount = Math.round(netKg * (s.sellPrice || 0));
+            txs.push({
+                date: s.date,
+                type: 'SALE',
+                description: `${(s.soldKg || 0).toLocaleString('id-ID')} Kg${(s.mortalityKg || 0) > 0 ? ` (Mati: ${s.mortalityKg} Kg)` : ''}`,
+                price: s.sellPrice || 0,
+                bonSopir: s.driverBonus || 0,
+                debit: amount,
+                credit: 0,
+                paymentDate: '-'
+            });
+        });
+
+        customerPaymentsList.forEach(p => {
+            const methods = [];
+            if ((p.transferAmount || 0) > 0) methods.push('TF');
+            if ((p.cashAmount || 0) > 0) methods.push('CASH');
+            const totalDeductions = (p.unloadingCost || 0) + (p.driverBonus || 0) + (p.otherCost || 0);
+            if (totalDeductions > 0) methods.push('POT');
+            const methodStr = methods.length > 0 ? methods.join('+') : 'Global';
+
+            txs.push({
+                date: p.date,
+                type: 'PAYMENT',
+                description: `Bayar: ${methodStr}`,
+                price: 0,
+                bonSopir: p.driverBonus || 0,
+                debit: 0,
+                credit: Math.round((p.totalPaid || 0) - (p.driverBonus || 0)),
+                paymentDate: formatDate(p.date)
+            });
+        });
+
+        txs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        // --- Hitung Saldo Awal (Opening Balance) ---
+        // Ambil semua transaksi customer SEBELUM startDate (hanya jika ada filter startDate)
+        let openingBalance = 0;
+        if (startDate) {
+            const startDt = new Date(startDate);
+            const allSalesBeforeStart = data.filter(r => isMatch(r) && new Date(r.date) < startDt);
+            const allPaymentsBeforeStart = payments.filter(p => isMatch(p) && new Date(p.date) < startDt);
+
+            const debitBefore = allSalesBeforeStart.reduce((acc, s) => {
+                const netKg = Math.max(0, (s.soldKg || 0) - (s.mortalityKg || 0));
+                return acc + Math.round(netKg * (s.sellPrice || 0));
+            }, 0);
+            const bonSopirBefore = allSalesBeforeStart.reduce((acc, s) => acc + (s.driverBonus || 0), 0);
+            const creditBefore = allPaymentsBeforeStart.reduce((acc, p) => {
+                return acc + Math.round((p.totalPaid || 0) - (p.driverBonus || 0));
+            }, 0);
+
+            // Saldo awal = Piutang yang belum lunas sebelum periode ini
+            openingBalance = debitBefore - bonSopirBefore - creditBefore;
+        }
+
+        const ledgerAoa: any[][] = [];
+        // Tambahkan header info periode
+        const periodInfo = startDate || endDate
+            ? `Periode: ${startDate ? formatDate(startDate) : 'Awal'} s/d ${endDate ? formatDate(endDate) : 'Sekarang'}`
+            : 'Periode: Semua Data';
+        ledgerAoa.push([`Kartu Piutang - ${customerName}`]);
+        ledgerAoa.push([periodInfo]);
+        ledgerAoa.push([]); // baris kosong
+        ledgerAoa.push(['Tanggal', 'Deskripsi', 'Harga / Kg', 'Bon Sopir', 'Piutang (Debit)', 'Bayar (Kredit)', 'Saldo']);
+
+        // Baris Saldo Awal (hanya jika ada filter startDate)
+        let HEADER_ROW = 4; // header tabel di baris ke-4
+        let openingBalanceRow = 0;
+        if (startDate && openingBalance !== 0) {
+            // Saldo awal masuk sebagai baris pertama data (baris 5)
+            ledgerAoa.push([
+                startDate ? formatDate(startDate) : '',
+                'Saldo Awal',
+                '',
+                '',
+                '',
+                '',
+                openingBalance
+            ]);
+            openingBalanceRow = HEADER_ROW + 1; // baris 5 = saldo awal
+        }
+
+        // Data transaksi periode ini
+        // Baris data pertama = setelah header + saldo awal (jika ada)
+        const firstTxRow = HEADER_ROW + (openingBalanceRow > 0 ? 2 : 1);
+        txs.forEach((tx, idx) => {
+            const r = firstTxRow + idx;
+            let formula: string;
+            if (idx === 0 && openingBalanceRow > 0) {
+                // Baris pertama, ada saldo awal di baris sebelumnya
+                formula = `G${r - 1}+E${r}-D${r}-F${r}`;
+            } else if (idx === 0) {
+                // Baris pertama, tidak ada saldo awal
+                formula = `E${r}-D${r}-F${r}`;
+            } else {
+                formula = `G${r - 1}+E${r}-D${r}-F${r}`;
+            }
+
+            ledgerAoa.push([
+                formatDate(tx.date),
+                tx.description,
+                tx.price,
+                tx.bonSopir,
+                tx.debit,
+                tx.credit,
+                { t: 'n', f: formula }
+            ]);
+        });
+
+        // Add Total Row
+        const firstDataRow = HEADER_ROW + 1;
+        const lastDataRow = firstTxRow + txs.length - 1;
+        if (txs.length > 0 || openingBalanceRow > 0) {
+            ledgerAoa.push([
+                'TOTAL',
+                '',
+                '',
+                { t: 'n', f: `SUM(D${firstDataRow}:D${lastDataRow})` },
+                { t: 'n', f: `SUM(E${firstDataRow}:E${lastDataRow})` },
+                { t: 'n', f: `SUM(F${firstDataRow}:F${lastDataRow})` },
+                { t: 'n', f: `G${lastDataRow}` } // Final balance
+            ]);
+        }
+
+        // 2. Detail Penjualan Data
+        const salesData = customerSales.map(r => ({
+            'Tanggal': formatDate(r.date),
+            'Nopol': r.plate,
+            'Sopir': r.driver,
+            'Ekor': r.soldHeads,
+            'Kg': r.soldKg,
+            'Mati (Ekor)': r.mortalityHeads,
+            'Mati (Kg)': r.mortalityKg,
+            'Total Penjualan': r.totalSales
+        }));
+
+        // 3. Detail Pembayaran Data
+        const paymentsData = customerPaymentsList.map(p => ({
+            'Tanggal Bayar': formatDate(p.date),
+            'Transfer': p.transferAmount,
+            'Cash': p.cashAmount,
+            'Bongkaran': p.unloadingCost,
+            'Bon Sopir': p.driverBonus,
+            'Biaya Lain': p.otherCost,
+            'Total Bayar': p.totalPaid,
+            'Keterangan': p.notes || ''
+        }));
+
+        downloadMultiSheetExcel([
+            { name: 'Kartu Piutang', aoa: ledgerAoa },
+            { name: 'Detail Penjualan', data: salesData },
+            { name: 'Detail Pembayaran', data: paymentsData }
+        ], `Ledger_${customerName}_${periodLabel}`);
+    };
+
     const clearFilters = () => {
         setStartDate('');
         setEndDate('');
@@ -163,15 +360,27 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
                             </td>
                             {!isForCapture && (
                                 <td className="py-1 px-2 text-center print:hidden">
-                                    <button
-                                        onClick={() => {
-                                            const custObj = uniqueCustomers.find(c => c.id === row.id || c.name === row.customer);
-                                            if (custObj) onShowCustomerStatement(custObj.name, custObj.id, startDate, endDate);
-                                        }}
-                                        className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-slate-300 rounded text-slate-600 hover:text-blue-600 hover:border-blue-300 text-[10px] font-bold shadow-sm"
-                                    >
-                                        Kartu <ChevronRight className="w-3 h-3" />
-                                    </button>
+                                    <div className="flex items-center justify-center gap-1">
+                                        <button
+                                            onClick={() => {
+                                                const custObj = uniqueCustomers.find(c => c.id === row.id || c.name === row.customer);
+                                                if (custObj) onShowCustomerStatement(custObj.name, custObj.id, startDate, endDate);
+                                            }}
+                                            className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-slate-300 rounded text-slate-600 hover:text-blue-600 hover:border-blue-300 text-[10px] font-bold shadow-sm"
+                                        >
+                                            Kartu <ChevronRight className="w-3 h-3" />
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                const custObj = uniqueCustomers.find(c => c.id === row.id || c.name === row.customer);
+                                                if (custObj) handleDownloadDetailExcel(custObj.id, custObj.name);
+                                            }}
+                                            className="inline-flex items-center justify-center w-6 h-6 bg-white border border-slate-300 rounded text-green-600 hover:text-green-700 hover:border-green-400 shadow-sm"
+                                            title="Download Excel Detail"
+                                        >
+                                            <Download className="w-3 h-3" />
+                                        </button>
+                                    </div>
                                 </td>
                             )}
                         </tr>
@@ -183,6 +392,16 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
             </table>
         </div>
     );
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center p-12 bg-white rounded-xl shadow-sm border border-slate-200">
+                <div className="w-12 h-12 border-4 border-red-200 border-t-red-600 rounded-full animate-spin mb-4"></div>
+                <h3 className="text-lg font-bold text-slate-800">Memuat Data Ledger...</h3>
+                <p className="text-slate-500 text-sm">Mohon tunggu sebentar, sedang mengambil data dari server.</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-4">
@@ -259,15 +478,26 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
                                     <div className="font-bold text-blue-800 text-sm">{row.customer}</div>
                                     <div className="text-[10px] text-slate-400">{row.transactionCount} Transaksi</div>
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        const custObj = uniqueCustomers.find(c => c.id === row.id || c.name === row.customer);
-                                        if (custObj) onShowCustomerStatement(custObj.name, custObj.id, startDate, endDate);
-                                    }}
-                                    className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-slate-300 rounded text-slate-600 hover:text-blue-600 text-[10px] font-bold shadow-sm"
-                                >
-                                    Kartu <ChevronRight className="w-3 h-3" />
-                                </button>
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        onClick={() => {
+                                            const custObj = uniqueCustomers.find(c => c.id === row.id || c.name === row.customer);
+                                            if (custObj) handleDownloadDetailExcel(custObj.id, custObj.name);
+                                        }}
+                                        className="inline-flex items-center justify-center w-6 h-6 bg-white border border-slate-300 rounded text-green-600 hover:text-green-700 hover:border-green-400 shadow-sm"
+                                    >
+                                        <Download className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            const custObj = uniqueCustomers.find(c => c.id === row.id || c.name === row.customer);
+                                            if (custObj) onShowCustomerStatement(custObj.name, custObj.id, startDate, endDate);
+                                        }}
+                                        className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-slate-300 rounded text-slate-600 hover:text-blue-600 hover:border-blue-300 text-[10px] font-bold shadow-sm"
+                                    >
+                                        Kartu <ChevronRight className="w-3 h-3" />
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-xs">

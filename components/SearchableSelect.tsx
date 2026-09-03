@@ -10,22 +10,23 @@ interface SearchableSelectProps {
   required?: boolean;
 }
 
-const SearchableSelect: React.FC<SearchableSelectProps> = ({ 
-  label, 
-  value, 
-  onChange, 
-  options, 
+const SearchableSelect: React.FC<SearchableSelectProps> = ({
+  label,
+  value,
+  onChange,
+  options,
   placeholder,
-  required 
+  required
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // If external value changes, sync internal search only if it doesn't match
-    // This allows typing freely
-    if (value) setSearch(value);
+    // Sync internal search with external value if it differs
+    if (value !== undefined && value !== search) {
+      setSearch(value);
+    }
   }, [value]);
 
   useEffect(() => {
@@ -33,13 +34,22 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
     function handleClickOutside(event: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        // If the current search text does not exactly match an option, revert to the last valid value
+        if (search && !options.includes(search)) {
+          setSearch(value || '');
+          if (!value) {
+            onChange(''); // Clear the parent value if invalid
+          }
+        } else if (!search) {
+          onChange('');
+        }
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [wrapperRef]);
+  }, [wrapperRef, search, value, options, onChange]);
 
-  const filteredOptions = options.filter(opt => 
+  const filteredOptions = options.filter(opt =>
     opt.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -50,9 +60,12 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearch(e.target.value);
-    onChange(e.target.value);
+    const val = e.target.value;
+    setSearch(val);
     setIsOpen(true);
+    if (val === '') {
+      onChange('');
+    }
   };
 
   return (
@@ -68,9 +81,9 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
           onFocus={() => setIsOpen(true)}
           required={required}
         />
-        <div 
-            className="absolute right-2 top-2.5 text-slate-400 cursor-pointer"
-            onClick={() => setIsOpen(!isOpen)}
+        <div
+          className="absolute right-2 top-2.5 text-slate-400 cursor-pointer"
+          onClick={() => setIsOpen(!isOpen)}
         >
           <ChevronDown className="w-5 h-5" />
         </div>
@@ -90,9 +103,9 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
               </div>
             ))
           ) : (
-             <div className="px-4 py-2 text-sm text-slate-500 italic">
-               "{search}" (New Entry)
-             </div>
+            <div className="px-4 py-2 text-sm text-red-500 italic">
+              Tidak ditemukan (Tambah via Master Data)
+            </div>
           )}
         </div>
       )}

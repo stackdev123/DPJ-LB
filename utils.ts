@@ -116,3 +116,23 @@ export const downloadAsExcel = (data: Record<string, any>[], fileName: string) =
     alert("Gagal mengunduh file Excel. Silakan coba lagi.");
   }
 };
+
+export const downloadMultiSheetExcel = (sheets: { name: string, data?: Record<string, any>[], aoa?: any[][] }[], fileName: string) => {
+  try {
+    const workbook = XLSX.utils.book_new();
+    sheets.forEach(sheet => {
+      let worksheet;
+      if (sheet.aoa) {
+        worksheet = XLSX.utils.aoa_to_sheet(sheet.aoa);
+      } else if (sheet.data) {
+        worksheet = XLSX.utils.json_to_sheet(sheet.data);
+      }
+      if (worksheet) XLSX.utils.book_append_sheet(workbook, worksheet, sheet.name);
+    });
+    XLSX.writeFile(workbook, `${fileName}.xlsx`);
+  } catch (err) {
+    console.error("Error generating Multi-sheet Excel:", err);
+    alert("Gagal mengunduh file Excel. Silakan coba lagi.");
+  }
+};
+

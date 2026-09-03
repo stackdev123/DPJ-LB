@@ -77,6 +77,7 @@ export interface LedgerRow {
   truckCost: number;
   
   // Financials
+  sellPrice: number;        // Unit price per Kg
   totalSales: number; // (SoldKg - MortalityKg) * SellPrice
   totalPaid: number;
   remainingBalance: number;

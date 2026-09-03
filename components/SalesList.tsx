@@ -157,6 +157,7 @@ const SalesList: React.FC<SalesListProps> = ({
             totalSales: item.totalInvoice,
             totalPaid: 0,
             remainingBalance: item.totalInvoice,
+            sellPrice: item.sellPrice || 0,
             saleId: item.id,
             purchaseId: item.purchaseId
         };

@@ -1,87 +1,86 @@
-
 <!DOCTYPE html>
 <html lang="en" class="light">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light">
-    <title>CV DPJ Berkah Unggas</title>
-    <link rel="icon" href="logo.ico" />
-    <!-- Keeping Tailwind CDN for simplicity/compatibility without extra build config -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            colors: {
-              primary: '#dc2626', // Red-600
-              secondary: '#64748b', // Slate-500 (Neutral to compliment Red)
-              danger: '#ef4444',
-            }
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light">
+  <title>CV DPJ Berkah Unggas</title>
+  <link rel="icon" href="logo.ico" />
+  <!-- Keeping Tailwind CDN for simplicity/compatibility without extra build config -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#dc2626', // Red-600
+            secondary: '#64748b', // Slate-500 (Neutral to compliment Red)
+            danger: '#ef4444',
           }
         }
       }
-    </script>
-    <style>
-      :root {
-        color-scheme: light;
+    }
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+    }
+
+    body {
+      background-color: #f8fafc;
+      /* bg-slate-50 */
+      color: #0f172a;
+      /* text-slate-900 */
+    }
+
+    @media print {
+      @page {
+        size: auto;
+        margin: 0mm;
       }
-      body {
-        background-color: #f8fafc; /* bg-slate-50 */
-        color: #0f172a; /* text-slate-900 */
+
+      body,
+      html,
+      #root {
+        height: auto !important;
+        overflow: visible !important;
+        background-color: white !important;
+        color: black !important;
       }
-      @media print {
-        @page {
-          size: auto;
-          margin: 0mm;
-        }
-        body, html, #root {
-          height: auto !important;
-          overflow: visible !important;
-          background-color: white !important;
-          color: black !important;
-        }
-        /* Ensure navigation and other UI elements are hidden */
-        nav, header, button, .no-print {
-          display: none !important;
-        }
-        /* Ensure content takes full width */
-        main {
-          margin: 0 !important;
-          padding: 0 !important;
-          width: 100% !important;
-        }
-        /* Fix table cutting off */
-        table {
-          page-break-inside: auto;
-        }
-        tr {
-          page-break-inside: avoid;
-          page-break-after: auto;
-        }
+
+      /* Ensure navigation and other UI elements are hidden */
+      nav,
+      header,
+      button,
+      .no-print {
+        display: none !important;
       }
-    </style>
-  <script type="importmap">
-{
-  "imports": {
-    "electron": "https://esm.sh/electron@^39.2.6",
-    "lucide-react": "https://esm.sh/lucide-react@^0.560.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.1/",
-    "jspdf": "https://esm.sh/jspdf@^3.0.4",
-    "vite": "https://esm.sh/vite@^7.2.7",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.87.1",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
-    "uuid": "https://esm.sh/uuid@^13.0.0",
-    "react/": "https://esm.sh/react@^19.2.1/",
-    "react": "https://esm.sh/react@^19.2.1",
-    "html2canvas": "https://esm.sh/html2canvas@^1.4.1"
-  }
-}
-</script>
+
+      /* Ensure content takes full width */
+      main {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+      }
+
+      /* Fix table cutting off */
+      table {
+        page-break-inside: auto;
+      }
+
+      tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+    }
+  </style>
 </head>
-  <body class="bg-slate-50 text-slate-900">
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-  </body>
+
+<body class="bg-slate-50 text-slate-900">
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
 </html>
