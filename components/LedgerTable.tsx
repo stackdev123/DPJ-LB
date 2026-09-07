@@ -215,18 +215,18 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
         ledgerAoa.push([]); // baris kosong
         ledgerAoa.push(['Tanggal', 'Deskripsi', 'Harga / Kg', 'Bon Sopir', 'Piutang (Debit)', 'Bayar (Kredit)', 'Saldo']);
 
-        // Baris Saldo Awal (hanya jika ada filter startDate)
+        // Baris Saldo Awal — selalu tampil jika ada filter startDate
         let HEADER_ROW = 4; // header tabel di baris ke-4
         let openingBalanceRow = 0;
-        if (startDate && openingBalance !== 0) {
+        if (startDate) {
             // Saldo awal masuk sebagai baris pertama data (baris 5)
             ledgerAoa.push([
-                startDate ? formatDate(startDate) : '',
+                formatDate(startDate),
                 'Saldo Awal',
                 '',
                 '',
-                '',
-                '',
+                openingBalance > 0 ? openingBalance : 0,  // debit jika piutang masih ada
+                openingBalance < 0 ? Math.abs(openingBalance) : 0, // kredit jika lebih bayar
                 openingBalance
             ]);
             openingBalanceRow = HEADER_ROW + 1; // baris 5 = saldo awal
