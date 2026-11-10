@@ -113,8 +113,14 @@ const RecapTable: React.FC<RecapTableProps> = ({ purchases, sales, onEditPurchas
 
                 const isFinished = shrinkagePct < 20;
 
+                const netKg = Math.max(0, soldKg - mortalityKg);
+                const buyPrice = Number(p.buyPrice) || 0;
+                const avgSellPrice = netKg > 0 ? totalRevenue / netKg : (soldKg > 0 ? totalRevenue / soldKg : 0);
+
                 return {
                     purchase: p,
+                    buyPrice,
+                    avgSellPrice,
                     sales: relatedSales,
                     salesCount: relatedSales.length,
                     customers,
@@ -212,8 +218,10 @@ const RecapTable: React.FC<RecapTableProps> = ({ purchases, sales, onEditPurchas
                 'Supplier': row.purchase.supplier,
                 'Kandang': row.purchase.coop,
                 'Plat': row.purchase.plate,
+                'Harga Beli / Kg': row.buyPrice || 0,
                 'Modal Beli': row.purchase.totalBuyCost,
                 'Customer(s)': row.customers,
+                'Harga Jual / Kg (Avg)': Math.round(row.avgSellPrice || 0),
                 'Beli (Kg)': row.purchase.kg,
                 'Jual (Kg)': row.soldKg,
                 'Mati (Kg)': row.mortalityKg,
@@ -329,7 +337,9 @@ const RecapTable: React.FC<RecapTableProps> = ({ purchases, sales, onEditPurchas
                                     <th className="p-2 border-r border-slate-600 w-16">Tgl</th>
                                     <th className="p-2 border-r border-slate-600 max-w-[100px]">Supplier/Kdg</th>
                                     <th className="p-2 text-right border-r border-slate-600 bg-slate-700">Modal</th>
+                                    <th className="p-2 text-right border-r border-slate-600 bg-slate-700">Hrg Beli</th>
                                     <th className="p-2 border-r border-slate-600 bg-blue-900 max-w-[150px]">Customer</th>
+                                    <th className="p-2 text-right border-r border-slate-600 bg-blue-900">Hrg Jual</th>
                                     <th className="p-2 text-right border-r border-slate-600 bg-blue-900">Jual(Kg)</th>
                                     <th className="p-2 text-right border-r border-slate-600 bg-blue-900">Mati</th>
                                     <th className="p-2 text-right border-r border-slate-600 bg-blue-800">Revenue</th>
@@ -340,7 +350,7 @@ const RecapTable: React.FC<RecapTableProps> = ({ purchases, sales, onEditPurchas
                             </thead>
                             <tbody className="divide-y divide-slate-200">
                                 {paginatedRows.length === 0 && orphanedData.count === 0 ? (
-                                    <tr><td colSpan={11} className="p-4 text-center text-slate-400 italic">No data matching filters.</td></tr>
+                                    <tr><td colSpan={13} className="p-4 text-center text-slate-400 italic">No data matching filters.</td></tr>
                                 ) : (
                                     paginatedRows.map((row) => (
                                         <React.Fragment key={row.purchase.id}>
@@ -366,6 +376,10 @@ const RecapTable: React.FC<RecapTableProps> = ({ purchases, sales, onEditPurchas
                                                     <div className="font-semibold">{formatCurrency(Number(row.purchase.totalBuyCost) || 0).replace('Rp', '').trim()}</div>
                                                     <div className="text-[9px] text-slate-400">{row.purchase.kg.toLocaleString()}Kg</div>
                                                 </td>
+                                                <td className="p-2 text-right border-r border-slate-100 font-mono bg-slate-50/50">
+                                                    <div className="font-semibold text-slate-700">{row.buyPrice > 0 ? formatCurrency(row.buyPrice).replace('Rp', '').trim() : '-'}</div>
+                                                    <div className="text-[9px] text-slate-400">/Kg</div>
+                                                </td>
 
                                                 <td className="p-2 border-r border-slate-100 truncate max-w-[150px]" title={row.customers}>
                                                     {row.salesCount > 0 ? (
@@ -376,6 +390,10 @@ const RecapTable: React.FC<RecapTableProps> = ({ purchases, sales, onEditPurchas
                                                             {onInputSale && <button onClick={(e) => { e.stopPropagation(); onInputSale(row.purchase.id); }} className="text-[9px] px-1 bg-blue-100 rounded hover:bg-blue-200"><PlusCircle className="w-3 h-3" /></button>}
                                                         </div>
                                                     )}
+                                                </td>
+                                                <td className="p-2 text-right border-r border-slate-100 font-mono bg-blue-50/30">
+                                                    <div className="font-semibold text-blue-800">{row.avgSellPrice > 0 ? formatCurrency(Math.round(row.avgSellPrice)).replace('Rp', '').trim() : '-'}</div>
+                                                    <div className="text-[9px] text-blue-400">/Kg</div>
                                                 </td>
                                                 <td className="p-2 text-right border-r border-slate-100 font-mono">
                                                     {row.soldKg.toLocaleString()}
@@ -403,7 +421,7 @@ const RecapTable: React.FC<RecapTableProps> = ({ purchases, sales, onEditPurchas
                                             </tr>
                                             {expandedRowId === row.purchase.id && (
                                                 <tr className="bg-slate-100/50 shadow-inner">
-                                                    <td colSpan={11} className="p-3 border-b border-slate-200">
+                                                    <td colSpan={13} className="p-3 border-b border-slate-200">
 
                                                         {/* FINANCIAL SUMMARY BLOCK */}
                                                         <div className="mb-4 bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
@@ -501,7 +519,7 @@ const RecapTable: React.FC<RecapTableProps> = ({ purchases, sales, onEditPurchas
                                 {orphanedData.count > 0 && (
                                     <React.Fragment>
                                         <tr className="bg-yellow-50 border-t border-yellow-200 cursor-pointer" onClick={() => setShowOrphanedDetail(!showOrphanedDetail)}>
-                                            <td colSpan={7} className="p-2 font-bold text-yellow-800 text-xs">
+                                            <td colSpan={9} className="p-2 font-bold text-yellow-800 text-xs">
                                                 <div className="flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Data Tanpa Induk Pembelian ({orphanedData.count})</div>
                                             </td>
                                             <td className="p-2 text-right font-bold text-blue-700 font-mono">{formatCurrency(orphanedData.totalRevenue).replace('Rp', '')}</td>
@@ -511,7 +529,7 @@ const RecapTable: React.FC<RecapTableProps> = ({ purchases, sales, onEditPurchas
                                         </tr>
                                         {showOrphanedDetail && (
                                             <tr className="bg-yellow-50/50">
-                                                <td colSpan={11} className="p-2">
+                                                <td colSpan={13} className="p-2">
                                                     <div className="bg-white border border-yellow-200 rounded text-[10px] p-2">
                                                         {orphanedData.sales.map(s => (
                                                             <div key={s.id} className="flex justify-between border-b border-dashed border-slate-200 py-1">
@@ -530,7 +548,9 @@ const RecapTable: React.FC<RecapTableProps> = ({ purchases, sales, onEditPurchas
                                 <tr>
                                     <td colSpan={3} className="p-2 text-right">Total:</td>
                                     <td className="p-2 text-right">{formatCurrency(totals.buyCost).replace('Rp', '')}</td>
+                                    <td className="p-2 text-right text-slate-700">{totals.buyKg > 0 ? formatCurrency(Math.round(totals.buyCost / totals.buyKg)).replace('Rp', '') : '-'}</td>
                                     <td className="p-2 bg-slate-200"></td>
+                                    <td className="p-2 text-right text-blue-800">{(totals.soldKg - totals.deadKg) > 0 ? formatCurrency(Math.round(totals.revenue / (totals.soldKg - totals.deadKg))).replace('Rp', '') : '-'}</td>
                                     <td className="p-2 text-right">{totals.soldKg.toLocaleString()}</td>
                                     <td className="p-2 text-right text-red-600">{totals.deadKg.toLocaleString()}</td>
                                     <td className="p-2 text-right text-blue-800">{formatCurrency(totals.revenue).replace('Rp', '')}</td>

@@ -93,6 +93,7 @@ const SalesList: React.FC<SalesListProps> = ({
 
             return {
                 ...s,
+                buyPrice: purchase?.buyPrice || 0,
                 plate: purchase?.plate || 'Tanpa Plat',
                 driver: purchase?.driver || 'Tanpa Driver',
                 coop: purchase?.coop || 'Tanpa Kandang',
@@ -175,6 +176,8 @@ const SalesList: React.FC<SalesListProps> = ({
             'Tanggal': formatDate(item.date),
             'Customer': item.customerName,
             'Transport (Plat/Kandang/Driver)': `${item.plate} / ${item.coop} / ${item.driver}`,
+            'Harga Beli / Kg': item.buyPrice || 0,
+            'Harga Jual / Kg': item.sellPrice || 0,
             'Volume Net (Kg)': (item.soldKg || 0) - (item.mortalityKg || 0),
             'Volume (Ekor)': item.soldHeads,
             'Mati (Kg)': item.mortalityKg,
@@ -274,6 +277,8 @@ const SalesList: React.FC<SalesListProps> = ({
                                 <th className="p-4 border-b border-slate-700 w-24">Tanggal</th>
                                 <th className="p-4 border-b border-slate-700">Customer</th>
                                 <th className="p-4 border-b border-slate-700">Sumber / Transport</th>
+                                <th className="p-4 text-right border-b border-slate-700">Harga Beli</th>
+                                <th className="p-4 text-right border-b border-slate-700">Harga Jual</th>
                                 <th className="p-4 text-right border-b border-slate-700">Volume Net</th>
                                 <th className="p-4 text-center border-b border-slate-700">Mati (Kg)</th>
                                 <th className="p-4 text-right border-b border-slate-700">Total Ops</th>
@@ -284,7 +289,7 @@ const SalesList: React.FC<SalesListProps> = ({
                         <tbody className="divide-y divide-slate-150">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={8} className="p-20 text-center">
+                                    <td colSpan={10} className="p-20 text-center">
                                         <div className="flex flex-col justify-center items-center gap-3">
                                             <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
                                             <span className="text-slate-500 font-medium italic">Memuat data penjualan...</span>
@@ -293,7 +298,7 @@ const SalesList: React.FC<SalesListProps> = ({
                                 </tr>
                             ) : error ? (
                                 <tr>
-                                    <td colSpan={8} className="p-20 text-center">
+                                    <td colSpan={10} className="p-20 text-center">
                                         <div className="flex flex-col justify-center items-center gap-2 text-red-500">
                                             <AlertCircle className="w-8 h-8" />
                                             <span className="font-bold">{error}</span>
@@ -302,7 +307,7 @@ const SalesList: React.FC<SalesListProps> = ({
                                 </tr>
                             ) : paginatedData.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} className="p-20 text-center">
+                                    <td colSpan={10} className="p-20 text-center">
                                         <div className="flex flex-col justify-center items-center gap-2 text-slate-400">
                                             <Search className="w-8 h-8 opacity-20" />
                                             <span className="italic">Data tidak ditemukan</span>
@@ -324,6 +329,20 @@ const SalesList: React.FC<SalesListProps> = ({
                                                 {item.coop} <br />
                                                 {item.driver}
                                             </div>
+                                        </td>
+
+                                        <td className="p-3 text-right align-top">
+                                            <div className="font-mono font-bold text-slate-700 text-sm">
+                                                {item.buyPrice > 0 ? formatCurrency(item.buyPrice) : '-'}
+                                            </div>
+                                            <div className="text-[10px] text-slate-400">/ Kg</div>
+                                        </td>
+
+                                        <td className="p-3 text-right align-top">
+                                            <div className="font-mono font-bold text-emerald-700 text-sm">
+                                                {item.sellPrice > 0 ? formatCurrency(item.sellPrice) : '-'}
+                                            </div>
+                                            <div className="text-[10px] text-slate-400">/ Kg</div>
                                         </td>
 
                                         <td className="p-3 text-right align-top">
